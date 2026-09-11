@@ -11,30 +11,29 @@ import PreviewPanel from '../Preview/PreviewPanel'
 import QuickEdit from './QuickEdit'
 
 import TemplateList from '../Templates/TemplateList'
-import VaultView from '../Vault/VaultView'
 import { useKeyboard } from '../../hooks/useKeyboard'
 import { useQueueToast } from '../../hooks/useQueueToast'
 import { useSearch } from '../../hooks/useSearch'
 import { useClipboardStore } from '../../stores/clipboardStore'
 import { useSettingsStore } from '../../stores/settingsStore'
-import { useVaultStore } from '../../stores/vaultStore'
 import { useShallow } from 'zustand/react/shallow'
 import { matchShortcut } from '../../utils/shortcut'
 import appIcon from '../../assets/icon.png'
-import { Settings, PanelRightOpen, HelpCircle, ListOrdered, X, Lock, Unlock, FilePlus, Key, FileText } from 'lucide-react'
+import { Settings, PanelRightOpen, HelpCircle, ListOrdered, X } from 'lucide-react'
 import { Button } from '../ui/button'
 import { cn } from '../../lib/utils'
 
-export type PanelView = 'clipboard' | 'templates' | 'vault'
+export type PanelView = 'clipboard' | 'templates'
 
 function PanelWindow(): React.JSX.Element {
   const { t } = useTranslation()
   const [view, setView] = useState<PanelView>('clipboard')
   const layoutMode = useSettingsStore((s) => s.layoutMode)
-  useKeyboard(view)
+  useKeyboard()
   useQueueToast()
   const items = useSearch()
   const { selectedIndex, pasteItem, previewCollapsed, togglePreview, filtersCollapsed, toggleFilters, isQueueActive, sequenceQueue, clearQueue, tagBarCollapsed, toggleTagBar, typeFilterCollapsed, toggleTypeFilter, sourceAppFilterCollapsed, toggleSourceAppFilter } = useClipboardStore()
+  const loadItemContent = useClipboardStore((state) => state.loadItemContent)
   const {
     toggleFilterShortcut,
     togglePreviewShortcut,
@@ -46,23 +45,22 @@ function PanelWindow(): React.JSX.Element {
     openTagShortcut: state.openTagShortcut,
     openSettingsShortcut: state.openSettingsShortcut,
   })))
-  const { security, lock: lockVault } = useVaultStore()
   const selectedItem = items[selectedIndex] || null
   const [editingItem, setEditingItem] = useState<string | null>(null)
   const [tagPickerItemId, setTagPickerItemId] = useState<string | null>(null)
   const tagPickerAnchorRef = useRef<HTMLDivElement>(null)
-  const [vaultCreateType, setVaultCreateType] = useState<'login' | 'secure_note' | null>(null)
-  const [showCreateMenu, setShowCreateMenu] = useState(false)
-  const createMenuRef = useRef<HTMLDivElement>(null)
-
-
   // 右侧预览 debounce：hover 稳定 150ms 后才显示
-  const [previewItem, setPreviewItem] = useState<(typeof selectedItem) | null>(null)
+  const [previewItemId, setPreviewItemId] = useState<string | null>(null)
+  const previewItem = previewItemId
+    ? items.find((item) => item.id === previewItemId) || null
+    : null
   const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const handleDoubleClick = useCallback((itemId: string) => {
-    setEditingItem(itemId)
-  }, [])
+    void loadItemContent(itemId).then((content) => {
+      if (content !== null) setEditingItem(itemId)
+    })
+  }, [loadItemContent])
 
   const handleEditSave = useCallback(
     (content: string) => {
@@ -78,38 +76,19 @@ function PanelWindow(): React.JSX.Element {
   useEffect(() => {
     if (previewTimerRef.current) clearTimeout(previewTimerRef.current)
     if (!selectedItem) {
-      setPreviewItem(null)
+      setPreviewItemId(null)
       return
     }
     previewTimerRef.current = setTimeout(() => {
-      setPreviewItem(selectedItem)
+      setPreviewItemId(selectedItem.id)
     }, 150)
     return () => {
       if (previewTimerRef.current) clearTimeout(previewTimerRef.current)
     }
-  }, [selectedItem])
+  }, [selectedItem?.id])
 
   const openTagPicker = useCallback((itemId: string) => {
     setTagPickerItemId(itemId)
-  }, [])
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent): void => {
-      if (createMenuRef.current && !createMenuRef.current.contains(e.target as Node)) {
-        setShowCreateMenu(false)
-      }
-    }
-    if (showCreateMenu) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [showCreateMenu])
-
-  useEffect(() => {
-    const unsub = window.api.onPanelSetView((view) => {
-      setView(view)
-    })
-    return unsub
   }, [])
 
   useEffect(() => {
@@ -119,8 +98,6 @@ function PanelWindow(): React.JSX.Element {
         window.api.openSettingsWindow('settings')
         return
       }
-      // Clipboard-only shortcuts — suppress when vault is active
-      if (view === 'vault') return
       if (matchShortcut(e, toggleFilterShortcut)) {
         e.preventDefault()
         toggleFilters()
@@ -143,7 +120,7 @@ function PanelWindow(): React.JSX.Element {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedItem, tagPickerItemId, view, togglePreview, toggleFilters, toggleFilterShortcut, togglePreviewShortcut, openTagShortcut, openSettingsShortcut])
+  }, [selectedItem, tagPickerItemId, togglePreview, toggleFilters, toggleFilterShortcut, togglePreviewShortcut, openTagShortcut, openSettingsShortcut])
 
   const containerClass =
     'surface-panel hairline flex h-full w-full flex-col overflow-hidden rounded-[1.15rem] border border-border/70'
@@ -167,66 +144,12 @@ function PanelWindow(): React.JSX.Element {
             active={view === 'clipboard'}
             onClick={() => setView('clipboard')}
           />
-          <TabButton
-            label={t('panel.tabs.vault')}
-            active={view === 'vault'}
-            onClick={() => setView('vault')}
-          />
         </div>
 
         <div className="min-w-0 flex-1" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
           <SearchBar view={view} />
         </div>
         <div className="ml-0.5 flex shrink-0 items-center gap-1" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-          {view === 'vault' && !security.locked && (
-            <div className="relative" ref={createMenuRef}>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowCreateMenu((v) => !v)}
-                aria-label={t('vault.newItem')}
-                className="h-8 w-8 rounded-full bg-muted text-muted-foreground hover:bg-secondary hover:text-foreground"
-                title={t('vault.newItem')}
-              >
-                <FilePlus className="w-4 h-4" />
-              </Button>
-              {showCreateMenu && (
-                <div className="absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-[1rem] border border-border bg-popover p-1 shadow-xl">
-                  <button
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm transition-colors hover:bg-secondary/80"
-                    onClick={() => { setVaultCreateType('login'); setShowCreateMenu(false) }}
-                  >
-                    <Key className="w-3.5 h-3.5 text-muted-foreground" />
-                    {t('vault.newLogin')}
-                  </button>
-                  <button
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm transition-colors hover:bg-secondary/80"
-                    onClick={() => { setVaultCreateType('secure_note'); setShowCreateMenu(false) }}
-                  >
-                    <FileText className="w-3.5 h-3.5 text-muted-foreground" />
-                    {t('vault.newSecureNote')}
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-          {view === 'vault' && !security.locked && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => lockVault()}
-              aria-label={t('vault.lock')}
-              className="h-8 w-8 rounded-full bg-muted text-muted-foreground hover:bg-secondary hover:text-destructive"
-              title={t('vault.lock')}
-            >
-              <Unlock className="w-4 h-4" />
-            </Button>
-          )}
-          {view === 'vault' && security.locked && (
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted/60 text-muted-foreground">
-              <Lock className="w-4 h-4" />
-            </div>
-          )}
           {view === 'clipboard' && layoutMode !== 'side' && (
             <div className="flex items-center gap-1" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
               {[
@@ -396,12 +319,8 @@ function PanelWindow(): React.JSX.Element {
             </div>
           </div>
         )
-      ) : view === 'templates' ? (
-        <TemplateList />
       ) : (
-        <div className="flex-1 min-h-0">
-          <VaultView layoutMode={layoutMode} createType={vaultCreateType} onCreateTypeChange={setVaultCreateType} />
-        </div>
+        <TemplateList />
       )}
 
       {/* Queue status bar */}

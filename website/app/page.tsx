@@ -18,11 +18,6 @@ const features: FeatureItem[] = [
     description: '模糊搜索快速定位历史内容，支持按类型、来源应用、标签筛选，键盘全程操作。',
   },
   {
-    title: '密码保险箱',
-    emoji: '🔐',
-    description: 'AES-256 加密存储密码和敏感信息，支持 Touch ID 解锁、TOTP 两步验证码生成。',
-  },
-  {
     title: '快捷键召唤',
     emoji: '⚡',
     description: '按 Shift+Cmd+V 即可唤起剪切板面板，不打断工作流，数字键 1-9 快速粘贴。',
@@ -59,7 +54,7 @@ export default function Home() {
             Z-Paste
           </h1>
           <p className="text-xl text-slate-300 mb-8 leading-relaxed">
-            macOS 剪切板管理器 + 密码保险箱
+            macOS 剪切板管理器
             <br />
             本地存储，隐私优先，免订阅
           </p>

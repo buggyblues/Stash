@@ -4,11 +4,11 @@ import { useClipboardStore } from '../../stores/clipboardStore'
 import { useTagStore } from '../../stores/tagStore'
 import { Badge } from '../ui/badge'
 import { cn } from '../../lib/utils'
-import { Star } from 'lucide-react'
+import { Star, ArrowDownWideNarrow } from 'lucide-react'
 
 export default function TagBar(): React.JSX.Element {
   const { t } = useTranslation()
-  const { leftFilter, setLeftFilter, starredCount, tagBarCollapsed } = useClipboardStore()
+  const { leftFilter, setLeftFilter, starredCount, tagBarCollapsed, sortBy, setSortBy } = useClipboardStore()
   const { tags, loadTags } = useTagStore()
   const scrollRef = useRef<HTMLDivElement>(null)
   const [canScrollLeft, setCanScrollLeft] = useState(false)
@@ -98,6 +98,19 @@ export default function TagBar(): React.JSX.Element {
           {starredCount > 0 && (
             <span className="ml-0.5 text-[9px] tabular-nums opacity-60">{starredCount}</span>
           )}
+        </Badge>
+
+        <Badge
+          variant={sortBy === 'usage' ? 'default' : 'secondary'}
+          className={cn(
+            'shrink-0 flex cursor-pointer items-center gap-1 whitespace-nowrap border px-2.5 py-1 text-[11px]',
+            sortBy !== 'usage' &&
+              'border-transparent bg-transparent text-muted-foreground hover:border-border/60 hover:bg-background/65 hover:text-foreground'
+          )}
+          onClick={() => setSortBy(sortBy === 'usage' ? 'recent' : 'usage')}
+        >
+          <ArrowDownWideNarrow className="h-3 w-3" aria-hidden="true" />
+          {t('panel.filter.byUsage')}
         </Badge>
 
         {tags.length > 0 && (

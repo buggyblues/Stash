@@ -2,9 +2,9 @@
 
 # Stash
 
-**macOS 剪贴板 + 密码管理器**
+**macOS 剪贴板管理器**
 
-免费、本地存储、隐私优先——你的剪贴板历史与密码，安全掌握。
+免费、本地存储、隐私优先——你的剪贴板历史，随时找回。
 
 [![Version](https://img.shields.io/github/v/release/perseveringman/Stash?label=版本)](https://github.com/perseveringman/Stash/releases/latest)
 [![Platform](https://img.shields.io/badge/平台-macOS%2012%2B-blue)](https://github.com/perseveringman/Stash/releases/latest)
@@ -32,8 +32,6 @@
 📋 **剪切板历史** — 自动保存每一次复制，文本、图片、代码、颜色、链接全都记录
 
 🔍 **快速搜索** — 模糊搜索 + 数字键 1-9 快速粘贴，全程键盘操作不离手
-
-🔐 **密码保险箱** — AES-256 加密存储密码，支持 Touch ID 解锁和 TOTP 两步验证码
 
 ⚡ **全局快捷键** — `Shift+Cmd+V` 随时唤起面板，不打断当前工作流
 

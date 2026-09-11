@@ -2,7 +2,6 @@ import { memo, useState, useCallback, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { useSettingsStore, ThemeMode, LanguageMode, LayoutMode } from '../../stores/settingsStore'
-import { useVaultStore } from '../../stores/vaultStore'
 import { useTagStore, TagWithCount } from '../../stores/tagStore'
 import { useLicenseStore } from '../../stores/licenseStore'
 import { useShallow } from 'zustand/react/shallow'
@@ -13,7 +12,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Button } from '../ui/button'
 import { Separator } from '../ui/separator'
 import { showToast } from '../../utils/toast'
-import VaultImportDialog from '../Vault/VaultImportDialog'
 import {
   MAX_ITEMS_CUSTOM_MIN,
   MAX_ITEMS_PRESETS,
@@ -38,7 +36,6 @@ import {
   AlertTriangle,
   LayoutGrid,
   Crown,
-  Upload,
   Download,
   CheckCircle2,
   RotateCcw,
@@ -620,28 +617,7 @@ function SyncSection(): React.JSX.Element {
 
 function PrivacySection(): React.JSX.Element {
   const { t } = useTranslation()
-  const { encryptionEnabled, setEncryptionEnabled } = useSettingsStore(useShallow((state) => ({
-    encryptionEnabled: state.encryptionEnabled,
-    setEncryptionEnabled: state.setEncryptionEnabled,
-  })))
-  const { security, setLockOnBlur, setAutoLockMinutes, loadItems } = useVaultStore()
   const [confirming, setConfirming] = useState(false)
-  const [showImportDialog, setShowImportDialog] = useState(false)
-  const [vaultState, setVaultState] = useState<{
-    locked: boolean
-    hasVaultSetup: boolean
-    hasBiometricUnlock: boolean
-    lastUnlockMethod: 'master' | 'recovery' | 'biometric' | 'hint' | null
-  } | null>(null)
-  const [auditEvents, setAuditEvents] = useState<
-    Array<{
-      id: string
-      event_type: string
-      result: string
-      reason_code: string | null
-      created_at: number
-    }>
-  >([])
 
   const handleClearAll = useCallback(async () => {
     if (!confirming) {
@@ -652,74 +628,9 @@ function PrivacySection(): React.JSX.Element {
     setConfirming(false)
   }, [confirming])
 
-  useEffect(() => {
-    let mounted = true
-    window.api
-      .vaultGetSecurityState?.()
-      .then((state) => {
-        if (mounted) setVaultState(state)
-      })
-      .catch(() => {
-        if (mounted) setVaultState(null)
-      })
-    window.api
-      .vaultListAuditEvents?.(5)
-      .then((events) => {
-        if (mounted) setAuditEvents(events)
-      })
-      .catch(() => {
-        if (mounted) setAuditEvents([])
-      })
-    return () => {
-      mounted = false
-    }
-  }, [])
-
-  const vaultStatus = !vaultState
-    ? t('settings.privacy.vaultStatusUnknown')
-    : !vaultState.hasVaultSetup
-      ? t('settings.privacy.vaultStatusNotSetup')
-      : vaultState.locked
-        ? t('settings.privacy.vaultStatusLocked')
-        : t('settings.privacy.vaultStatusUnlocked')
-
   return (
     <div>
       <SectionTitle title={t('settings.privacy.title')} />
-      <SettingsItem
-        label={t('settings.privacy.encryption')}
-        description={t('settings.privacy.encryption.desc')}
-      >
-        <Switch checked={encryptionEnabled} onCheckedChange={setEncryptionEnabled} />
-      </SettingsItem>
-      <Separator />
-      <SettingsItem
-        label={t('settings.privacy.vaultStatus')}
-        description={t('settings.privacy.vaultStatus.desc')}
-      >
-        <span className="text-xs rounded-md border px-2 py-1 bg-muted">{vaultStatus}</span>
-      </SettingsItem>
-      <Separator />
-      <div className="py-4">
-        <p className="text-sm font-medium mb-2">{t('settings.privacy.recentEvents')}</p>
-        {auditEvents.length === 0 ? (
-          <p className="text-xs text-muted-foreground">
-            {t('settings.privacy.recentEvents.empty')}
-          </p>
-        ) : (
-          <div className="space-y-1">
-            {auditEvents.map((event) => (
-              <div key={event.id} className="text-xs text-muted-foreground flex items-center gap-2">
-                <span className="w-24">{new Date(event.created_at).toLocaleString()}</span>
-                <span>{event.event_type}</span>
-                <span>{event.result}</span>
-                {event.reason_code && <span>({event.reason_code})</span>}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-      <Separator />
       <SettingsItem
         label={t('settings.privacy.clearAll')}
         description={t('settings.privacy.clearAll.desc')}
@@ -740,75 +651,6 @@ function PrivacySection(): React.JSX.Element {
           )}
         </Button>
       </SettingsItem>
-
-      <Separator />
-
-      {/* Import Passwords */}
-      <SettingsItem
-        label={t('vault.import.title')}
-        description={t('vault.import.description')}
-      >
-        <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
-          <Upload className="w-3 h-3 mr-2" />
-          {t('vault.import.button')}
-        </Button>
-      </SettingsItem>
-
-      {showImportDialog && (
-        <VaultImportDialog
-          onClose={() => setShowImportDialog(false)}
-          onImported={() => loadItems()}
-        />
-      )}
-
-      <Separator />
-
-      {/* Vault Security */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-medium">{t('settings.vault.title')}</h3>
-
-        {/* Lock on blur */}
-        <div className="flex items-center justify-between">
-          <div className="space-y-0.5">
-            <p className="text-sm">{t('settings.vault.lockOnBlur')}</p>
-            <p className="text-xs text-muted-foreground">
-              {security.securityMode === 'strict'
-                ? t('settings.vault.lockOnBlurStrictNote')
-                : t('settings.vault.lockOnBlurDesc')}
-            </p>
-          </div>
-          <Switch
-            checked={security.securityMode === 'strict' ? true : security.lockOnBlur}
-            disabled={security.securityMode === 'strict'}
-            onCheckedChange={(v) => setLockOnBlur(v)}
-          />
-        </div>
-
-        {/* Auto-lock timeout */}
-        <div className="flex items-center justify-between">
-          <div className="space-y-0.5">
-            <p className="text-sm">{t('settings.vault.autoLockTimeout')}</p>
-            <p className="text-xs text-muted-foreground">
-              {t('settings.vault.autoLockTimeoutDesc')}
-            </p>
-          </div>
-          <Select
-            value={String(security.autoLockMinutes)}
-            onValueChange={(v) => setAutoLockMinutes(Number(v))}
-          >
-            <SelectTrigger className="w-32 h-8 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1">{t('settings.vault.timeout1')}</SelectItem>
-              <SelectItem value="5">{t('settings.vault.timeout5')}</SelectItem>
-              <SelectItem value="10">{t('settings.vault.timeout10')}</SelectItem>
-              <SelectItem value="30">{t('settings.vault.timeout30')}</SelectItem>
-              <SelectItem value="99999">{t('settings.vault.timeoutNever')}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
     </div>
   )
 }

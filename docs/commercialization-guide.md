@@ -14,12 +14,11 @@
 ## 1. 产品定位与定价策略
 
 ### 产品定位
-**Stash** — Mac 上最优雅的剪贴板 + 密码管理器。一次购买，永久使用。
+**Stash** — Mac 上最优雅的剪贴板管理器。一次购买，永久使用。
 
 ### 核心卖点（USP）
 - 🔒 **隐私优先**：数据 100% 本地存储，零云端依赖
 - ⚡ **效率倍增**：序列粘贴、批量粘贴、模板片段
-- 🗝️ **密码管理**：军事级 AES-256 加密，Touch ID 解锁
 - 🎨 **精美设计**：原生 macOS 风格，暗色/亮色主题
 - 💰 **一次买断**：不是订阅制，永久许可证
 
@@ -60,7 +59,7 @@
 - **触点**：应用内 5 步引导流程
 - **目标**：让用户在 2 分钟内体验到核心价值
 - **关键**：
-  - 展示智能剪贴板、密码管理、快捷键
+  - 展示智能剪贴板、快捷键和模板片段
   - **最后一步提示 14 天免费试用**
   - 提供激活码输入入口（已有码的用户直接激活）
 
@@ -199,7 +198,7 @@ node generate-license-keys.js > keys.txt
 **标题公式**：
 - "我靠这个工具，每天多出 30 分钟 ⏰"
 - "Mac 用户必装的 3 个效率神器"
-- "隐私至上！不用登录的密码管理器"
+- "隐私至上！不用登录的剪贴板管理器"
 - "独立开发者的一天：写代码、修 bug、发版本"
 
 **配图要求**：
@@ -249,7 +248,6 @@ node generate-license-keys.js > keys.txt
 | r/productivity | 分享效率提升经验，自然带出产品 |
 | r/SideProject | 分享开发历程 |
 | r/indiehackers | 商业化进展分享 |
-| r/PasswordManagers | 展示 Stash Vault 功能 |
 
 #### Reddit 注意事项
 - **不要硬广**：Reddit 用户反感纯广告
@@ -260,7 +258,7 @@ node generate-license-keys.js > keys.txt
 ### 5.4 Product Hunt 发布
 
 #### 发布清单
-- [ ] 准备 tagline: "The privacy-first clipboard & password manager for Mac"
+- [ ] 准备 tagline: "The privacy-first clipboard manager for Mac"
 - [ ] 制作 5 张产品截图（暗色主题优先）
 - [ ] 录制 2 分钟产品视频
 - [ ] 准备 First Comment（300 字产品故事）
@@ -272,7 +270,6 @@ node generate-license-keys.js > keys.txt
 #### 关键词
 - "mac clipboard manager"
 - "best clipboard app mac"
-- "password manager offline"
 - "clipboard history mac"
 
 #### 官网优化

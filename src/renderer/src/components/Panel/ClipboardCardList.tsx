@@ -4,6 +4,7 @@ import i18n from '../../i18n'
 import { ClipboardItem, useClipboardStore } from '../../stores/clipboardStore'
 import { useSearch } from '../../hooks/useSearch'
 import { useAppIcon } from '../../hooks/useAppIcon'
+import { useClipboardItemContent } from '../../hooks/useClipboardItemContent'
 import CodePreview from '../Preview/CodePreview'
 import JsonPreview from '../Preview/JsonPreview'
 import ColorPreview from '../Preview/ColorPreview'
@@ -58,38 +59,81 @@ const TypeIcon = ({ type, className }: { type: string; className?: string }): Re
   }
 }
 
-function CardPreviewContent({ item }: { item: ClipboardItem }): React.JSX.Element {
-  const metadata = useMemo(() => {
-    if (!item.metadata) return {}
-    try { return JSON.parse(item.metadata) } catch { return {} }
-  }, [item.metadata])
+function CardPreviewContent({
+  item,
+  rootRef
+}: {
+  item: ClipboardItem
+  rootRef: React.RefObject<HTMLDivElement | null>
+}): React.JSX.Element {
+  const contentRef = useRef<HTMLDivElement>(null)
+  const [isNearViewport, setIsNearViewport] = useState(false)
+  const content = useClipboardItemContent(item.id, item.content, isNearViewport)
 
-  switch (item.content_type) {
+  useEffect(() => {
+    if (content || !contentRef.current) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setIsNearViewport(true)
+          observer.disconnect()
+        }
+      },
+      { root: rootRef.current, rootMargin: '160px' }
+    )
+    observer.observe(contentRef.current)
+    return () => observer.disconnect()
+  }, [content, rootRef])
+
+  const resolvedItem = content === item.content ? item : { ...item, content }
+  const metadata = useMemo(() => {
+    if (!resolvedItem.metadata) return {}
+    try { return JSON.parse(resolvedItem.metadata) } catch { return {} }
+  }, [resolvedItem.metadata])
+
+  if (!content) {
+    return (
+      <div ref={contentRef} className="h-full overflow-auto p-3 font-mono text-[11px] leading-relaxed text-foreground/70">
+        {item.preview || ''}
+      </div>
+    )
+  }
+
+  let preview: React.JSX.Element
+  switch (resolvedItem.content_type) {
     case 'code':
-      return <CodePreview code={item.content} language={metadata.language || 'plaintext'} />
+      preview = <CodePreview code={resolvedItem.content} language={metadata.language || 'plaintext'} />
+      break
     case 'json':
-      return <JsonPreview content={item.content} />
+      preview = <JsonPreview content={resolvedItem.content} />
+      break
     case 'color':
-      return <ColorPreview content={item.content} />
+      preview = <ColorPreview content={resolvedItem.content} />
+      break
     case 'image':
-      return <ImagePreview content={item.content} metadata={item.metadata} />
+      preview = <ImagePreview content={resolvedItem.content} metadata={resolvedItem.metadata} />
+      break
     default:
-      return (
+      preview = (
         <pre className="whitespace-pre-wrap break-all p-3 font-mono text-[11px] leading-relaxed text-foreground/90">
-          {item.content}
+          {resolvedItem.content}
         </pre>
       )
   }
+
+  return <div ref={contentRef} className="h-full overflow-auto">{preview}</div>
 }
 
 const ClipboardCard = memo(function ClipboardCard({
   item,
   index,
+  rootRef,
   onDoubleClick,
   onOpenTagPicker
 }: {
   item: ClipboardItem
   index: number
+  rootRef: React.RefObject<HTMLDivElement | null>
   onDoubleClick?: (itemId: string) => void
   onOpenTagPicker?: (itemId: string) => void
 }): React.JSX.Element {
@@ -289,7 +333,7 @@ const ClipboardCard = memo(function ClipboardCard({
 
         {/* Card content — the preview */}
         <div className="flex-1 overflow-auto">
-          <CardPreviewContent item={item} />
+          <CardPreviewContent item={item} rootRef={rootRef} />
         </div>
 
         {/* Card footer */}
@@ -428,7 +472,14 @@ export default function ClipboardCardList({ onDoubleClick, onOpenTagPicker }: {
       className="no-scrollbar flex flex-1 items-stretch gap-3 overflow-x-auto px-3 py-3"
     >
       {items.map((item, index) => (
-        <ClipboardCard key={item.id} item={item} index={index} onDoubleClick={onDoubleClick} onOpenTagPicker={onOpenTagPicker} />
+        <ClipboardCard
+          key={item.id}
+          item={item}
+          index={index}
+          rootRef={scrollRef}
+          onDoubleClick={onDoubleClick}
+          onOpenTagPicker={onOpenTagPicker}
+        />
       ))}
     </div>
   )

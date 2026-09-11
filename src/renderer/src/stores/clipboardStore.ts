@@ -26,6 +26,7 @@ export type LeftFilter =
 
 interface ClipboardState {
   items: ClipboardItem[]
+  itemsRevision: number
   selectedIndex: number
   searchQuery: string
   isVisible: boolean
@@ -59,6 +60,7 @@ interface ClipboardState {
   getQueuePosition: (id: string) => number
 
   loadItems: () => Promise<void>
+  loadItemContent: (id: string) => Promise<string | null>
   loadStarredCount: () => Promise<void>
   addItem: (item: ClipboardItem) => void
   setSelectedIndex: (index: number) => void
@@ -85,6 +87,7 @@ interface ClipboardState {
 
 export const useClipboardStore = create<ClipboardState>((set, get) => ({
   items: [],
+  itemsRevision: 0,
   selectedIndex: 0,
   searchQuery: '',
   isVisible: false,
@@ -184,10 +187,63 @@ export const useClipboardStore = create<ClipboardState>((set, get) => ({
       contentType: state.filterType || undefined,
       leftFilter: state.leftFilter,
       sourceApp: state.sourceAppFilter || undefined,
-      sortBy: state.sortBy
+      sortBy: state.sortBy,
+      includeContent: false
     })
-    set({ items, selectedIndex: 0, hasMore: items.length >= 50 })
+    const loadedContent = new Map(
+      state.items
+        .filter((item) => item.content)
+        .map((item) => [item.id, item.content])
+    )
+    const mergedItems = items.map((item) => {
+      const content = loadedContent.get(item.id)
+      return content ? { ...item, content } : item
+    })
+    set((prev) => ({
+      items: mergedItems,
+      itemsRevision: prev.itemsRevision + 1,
+      selectedIndex: 0,
+      hasMore: items.length >= 50
+    }))
     get().loadStarredCount()
+  },
+
+  loadItemContent: async (id) => {
+    const current = get().items.find((item) => item.id === id)
+    if (current?.content) return current.content
+
+    const pending = pendingContentRequests.get(id)
+    if (pending) return pending
+
+    const request = window.api
+      .getItemContent(id)
+      .then((result) => {
+        if (!result) return null
+        set((state) => {
+          const item = state.items.find((candidate) => candidate.id === id)
+          if (!item || item.content === result.content) return state
+          return {
+            items: state.items.map((candidate) =>
+              candidate.id === id
+                ? {
+                    ...candidate,
+                    content: result.content,
+                    content_type: result.content_type,
+                    metadata: result.metadata
+                  }
+                : candidate
+            )
+          }
+        })
+        return result.content
+      })
+      .catch(() => null)
+      .finally(() => {
+        pendingContentRequests.delete(id)
+      })
+
+    pendingContentRequests.set(id, request)
+    return request
   },
 
   loadNextPage: async () => {
@@ -201,7 +257,8 @@ export const useClipboardStore = create<ClipboardState>((set, get) => ({
         contentType: state.filterType || undefined,
         leftFilter: state.leftFilter,
         sourceApp: state.sourceAppFilter || undefined,
-        sortBy: state.sortBy
+        sortBy: state.sortBy,
+        includeContent: false
       })
       set((prev) => ({
         items: [...prev.items, ...moreItems],
@@ -219,7 +276,8 @@ export const useClipboardStore = create<ClipboardState>((set, get) => ({
 
   addItem: (item) => {
     set((state) => ({
-      items: [item, ...state.items.filter((i) => i.id !== item.id)].slice(0, 200)
+      items: [item, ...state.items.filter((i) => i.id !== item.id)].slice(0, 200),
+      itemsRevision: state.itemsRevision + 1
     }))
   },
 
@@ -267,7 +325,8 @@ export const useClipboardStore = create<ClipboardState>((set, get) => ({
   deleteItem: async (id) => {
     await window.api.deleteItem(id)
     set((state) => ({
-      items: state.items.filter((i) => i.id !== id)
+      items: state.items.filter((i) => i.id !== id),
+      itemsRevision: state.itemsRevision + 1
     }))
   },
 
@@ -276,14 +335,16 @@ export const useClipboardStore = create<ClipboardState>((set, get) => ({
     set((state) => ({
       items: state.items.map((i) =>
         i.id === id ? { ...i, is_favorite: i.is_favorite ? 0 : 1 } : i
-      )
+      ),
+      itemsRevision: state.itemsRevision + 1
     }))
   },
 
   togglePin: async (id) => {
     await window.api.togglePin(id)
     set((state) => ({
-      items: state.items.map((i) => (i.id === id ? { ...i, is_pinned: i.is_pinned ? 0 : 1 } : i))
+      items: state.items.map((i) => (i.id === id ? { ...i, is_pinned: i.is_pinned ? 0 : 1 } : i)),
+      itemsRevision: state.itemsRevision + 1
     }))
   },
 
@@ -310,9 +371,16 @@ export const useClipboardStore = create<ClipboardState>((set, get) => ({
       return
     }
     const items = await window.api.searchItems(query)
-    set({ items, selectedIndex: 0, hasMore: false })
+    set((prev) => ({
+      items,
+      itemsRevision: prev.itemsRevision + 1,
+      selectedIndex: 0,
+      hasMore: false
+    }))
   }
 }))
+
+const pendingContentRequests = new Map<string, Promise<string | null>>()
 
 function syncWidgetFilter(state: ClipboardState): void {
   window.api.widgetSyncFilter?.({

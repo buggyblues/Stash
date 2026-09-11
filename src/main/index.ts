@@ -13,19 +13,9 @@ import * as repository from './database/repository'
 import { iCloudSync } from './sync/icloud'
 import { getAppIcon } from './clipboard/app-icon'
 import { exec } from 'child_process'
-import * as vaultRepository from './database/vault-repository'
-import { VaultSessionManager } from './vault/session'
-import { VaultService } from './vault/service'
-import { AutoTypeAgent } from './vault/auto-type'
-import { nanoid } from 'nanoid'
-import { VaultCryptoWorkerClient } from './vault/worker-client'
-import { createVaultError, isVaultError } from './vault/errors'
-import { startExtensionBridge, stopExtensionBridge } from './extension-bridge'
 import { autoUpdater } from 'electron-updater'
 import { DEFAULT_MAX_ITEMS, normalizeMaxItems } from '../shared/max-items'
 import * as license from './license'
-import { writeVaultClipboard } from './clipboard/vault-clipboard-guard'
-import { parseImportFile, importEntries, ImportFormat } from './vault/import'
 import { setDesktopLanguage, translateDesktop } from './localization'
 
 let windowManager: WindowManager
@@ -35,10 +25,6 @@ let trayManager: TrayManager
 let settingsWindowManager: SettingsWindowManager
 let clipboardMonitor: ClipboardMonitor
 let syncService: iCloudSync | null = null
-let vaultSession: VaultSessionManager
-let vaultService: VaultService
-let autoTypeAgent: AutoTypeAgent
-let vaultCryptoWorker: VaultCryptoWorkerClient | null = null
 let cleanupMaxItems = DEFAULT_MAX_ITEMS
 let appLanguage = setDesktopLanguage(app.getLocale())
 
@@ -206,13 +192,6 @@ app.whenReady().then(() => {
     windowManager.show()
   })
   clipboardMonitor = new ClipboardMonitor()
-  const worker = new VaultCryptoWorkerClient()
-  vaultCryptoWorker = worker
-  vaultSession = new VaultSessionManager(worker)
-  vaultService = new VaultService(vaultSession, worker)
-  windowManager.setVaultSession(vaultSession)
-  autoTypeAgent = new AutoTypeAgent()
-  startExtensionBridge(vaultSession, vaultService)
 
   shortcutManager.register()
   trayManager.create()
@@ -268,6 +247,10 @@ app.whenReady().then(() => {
 
   ipcMain.handle('clipboard:getItems', async (_, options) => {
     return repository.getItems(options)
+  })
+
+  ipcMain.handle('clipboard:getItemContent', async (_, id: string) => {
+    return repository.getItemContent(id) ?? null
   })
 
   ipcMain.handle('clipboard:searchItems', async (_, query) => {
@@ -463,192 +446,10 @@ app.whenReady().then(() => {
     syncService.syncNow()
   })
 
-  ipcMain.handle('vault:delete', async (_, id: string) => {
-    await vaultService.deleteItem(id)
-  })
-
-  ipcMain.handle('vault:setupMasterPassword', async (_, input: {
-    masterPassword: string
-    securityMode: 'strict' | 'relaxed'
-    hintQuestion?: string
-    hintAnswer?: string
-  }) => {
-    return vaultSession.setupMasterPassword(input)
-  })
-
-  ipcMain.handle('vault:unlock', async (_, masterPassword: string) => {
-    await vaultSession.unlockWithMasterPassword(masterPassword)
-    return { ok: true }
-  })
-
-  ipcMain.handle('vault:unlockWithRecoveryKey', async (_, recoveryKey: string) => {
-    await vaultSession.unlockWithRecoveryKey(recoveryKey)
-    return { ok: true }
-  })
-
-  ipcMain.handle('vault:unlockWithBiometric', async () => {
-    windowManager.suppressBlur()
-    try {
-      await vaultSession.unlockWithBiometric()
-    } finally {
-      windowManager.restoreBlur()
-    }
-    return { ok: true }
-  })
-
-  ipcMain.handle('vault:lock', async () => {
-    await vaultSession.lock()
-    return { ok: true }
-  })
-
-  ipcMain.handle('vault:setLockOnBlur', async (_, enabled: boolean) => {
-    vaultSession.setLockOnBlur(enabled)
-  })
-
-  ipcMain.handle('vault:setAutoLockMinutes', async (_, minutes: number) => {
-    vaultSession.setAutoLockMinutes(minutes)
-  })
-
-  ipcMain.handle('vault:resetVault', async () => {
-    await vaultSession.resetVault()
-    return { ok: true }
-  })
-
-  ipcMain.handle('vault:unlockWithHint', async (_, hintAnswer: string) => {
-    await vaultSession.unlockWithHintAnswer(hintAnswer)
-    return { ok: true }
-  })
-
-  ipcMain.handle('vault:resetPassword', async (_, input: {
-    newMasterPassword: string
-    hintQuestion?: string
-    hintAnswer?: string
-  }) => {
-    return vaultSession.resetPassword(input)
-  })
-
-  ipcMain.handle('vault:getSecurityState', async () => {
-    return vaultSession.getSecurityState()
-  })
-
-  ipcMain.handle('vault:listAuditEvents', async (_, limit?: number) => {
-    return vaultRepository.listVaultAuditEvents(limit)
-  })
-
-  ipcMain.handle('vault:listItems', async (_, options) => {
-    return await vaultService.listItems(options)
-  })
-
-  ipcMain.handle('vault:createLogin', async (_, input) => {
-    return await vaultService.createLogin(input)
-  })
-
-  ipcMain.handle('vault:createSecureNote', async (_, input) => {
-    return await vaultService.createSecureNote(input)
-  })
-
-  ipcMain.handle('vault:updateItem', async (_, input) => {
-    await vaultService.updateItem(input)
-  })
-
-  ipcMain.handle('vault:getItemDetail', async (_, id: string) => {
-    return await vaultService.getItemDetail(id)
-  })
-
-  ipcMain.handle('vault:generatePassword', async (_, options) => {
-    return await vaultService.generatePassword(options)
-  })
-
-  ipcMain.handle('vault:getTotpCode', async (_, id: string) => {
-    return await vaultService.getTotpCode(id)
-  })
-
-  ipcMain.handle('vault:autoType', async (_, input: { id: string; submit?: boolean; stepDelayMs?: number }) => {
-    const detail = await vaultService.getItemDetail(input.id)
-    if (!detail || detail.type !== 'login') {
-      throw new Error('Vault login item not found')
-    }
-
-    const previousApp = windowManager.getPreviousAppBundleId()
-    try {
-      await autoTypeAgent.run(previousApp, {
-        username: detail.fields.username,
-        password: detail.fields.password,
-        submit: input.submit,
-        stepDelayMs: input.stepDelayMs
-      }, () => windowManager.hide())
-      vaultRepository.appendVaultAuditEvent({
-        id: nanoid(),
-        event_type: 'auto_type',
-        result: 'success',
-        reason_code: null,
-        created_at: Date.now()
-      })
-      return { ok: true, fallbackCopied: false }
-    } catch {
-      writeVaultClipboard(detail.fields.password)
-      vaultRepository.appendVaultAuditEvent({
-        id: nanoid(),
-        event_type: 'auto_type',
-        result: 'failed',
-        reason_code: 'fallback_copy_password',
-        created_at: Date.now()
-      })
-      return { ok: true, fallbackCopied: true }
-    }
-  })
-
-  // Copy vault-sensitive text to clipboard with auto-clear & monitor exclusion
-  ipcMain.handle('vault:copyToClipboard', async (_, text: string) => {
-    writeVaultClipboard(text)
-  })
-
-  // Vault import: parse file and import entries
-  ipcMain.handle(
-    'vault:import',
-    async (_, input: { filePath: string; format: ImportFormat }) => {
-      try {
-        const entries = parseImportFile(input.filePath, input.format)
-        return await importEntries(entries, vaultService)
-      } catch (error) {
-        if (isVaultError(error)) {
-          throw error
-        }
-        throw createVaultError('vault.import.importFailedGeneric')
-      }
-    }
-  )
-
-  // Vault import: parse file for preview (returns entry count without importing)
-  ipcMain.handle(
-    'vault:importPreview',
-    async (_, input: { filePath: string; format: ImportFormat }) => {
-      try {
-        const entries = parseImportFile(input.filePath, input.format)
-        return { total: entries.length, entries: entries.slice(0, 5) }
-      } catch (error) {
-        if (isVaultError(error)) {
-          throw error
-        }
-        throw createVaultError('vault.import.parseFailed')
-      }
-    }
-  )
-
   // Content type counts
   ipcMain.handle('clipboard:getContentTypeCounts', async (_, options) => {
     return repository.getContentTypeCounts(options)
   })
-
-  // File dialog for vault import
-  ipcMain.handle(
-    'dialog:showOpenDialog',
-    async (_, options: Electron.OpenDialogOptions) => {
-      const win = BrowserWindow.getFocusedWindow() || settingsWindowManager?.getWindow()
-      if (!win) return { canceled: true, filePaths: [] }
-      return await dialog.showOpenDialog(win, options)
-    }
-  )
 
   // Source app IPC handlers
   ipcMain.handle('sourceApps:getAll', async () => {
@@ -821,12 +622,8 @@ app.on('window-all-closed', () => {
 })
 
 app.on('will-quit', () => {
-  stopExtensionBridge()
   shortcutManager.unregister()
   clipboardMonitor.stop()
-  if (vaultCryptoWorker) {
-    void vaultCryptoWorker.shutdown()
-  }
   if (syncService) syncService.stop()
   const db = getDatabase()
   if (db) db.close()

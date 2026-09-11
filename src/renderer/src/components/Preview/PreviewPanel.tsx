@@ -19,6 +19,7 @@ import {
 import { Clipboard, Copy, Link, Code, PanelRightClose } from 'lucide-react'
 import { Button } from '../ui/button'
 import { useClipboardStore } from '../../stores/clipboardStore'
+import { useClipboardItemContent } from '../../hooks/useClipboardItemContent'
 import { getContentTypeLabel } from '../../utils/contentType'
 
 interface Props {
@@ -29,8 +30,10 @@ interface Props {
 export default function PreviewPanel({ item, layout = 'side' }: Props): React.JSX.Element {
   const { t } = useTranslation()
   const { togglePreview } = useClipboardStore()
+  const content = useClipboardItemContent(item?.id ?? '', item?.content ?? '', !!item)
+  const resolvedItem = item && content !== item.content ? { ...item, content } : item
 
-  if (!item) {
+  if (!resolvedItem) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center px-6 text-muted-foreground">
         <div className="rounded-[1.5rem] border border-border/60 bg-card px-8 py-10 text-center shadow-sm">
@@ -46,22 +49,22 @@ export default function PreviewPanel({ item, layout = 'side' }: Props): React.JS
       <div className="flex shrink-0 items-center justify-between border-b border-border/60 px-4 py-3">
         <div className="flex min-w-0 items-center gap-2">
           <span className="shrink-0 rounded-full bg-secondary px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            {getContentTypeLabel(t, item.content_type)}
+            {getContentTypeLabel(t, resolvedItem.content_type)}
           </span>
-          {item.title && (
+          {resolvedItem.title && (
             <span className="truncate text-xs font-semibold text-primary">
-              {item.title}
+              {resolvedItem.title}
             </span>
           )}
         </div>
         <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-          {item.use_count > 0 && (
+          {resolvedItem.use_count > 0 && (
             <span className="tabular-nums">
-              {t('preview.useCount', { count: item.use_count })}
+              {t('preview.useCount', { count: resolvedItem.use_count })}
             </span>
           )}
           <span className="tabular-nums">
-            {new Date(item.created_at).toLocaleString()}
+            {new Date(resolvedItem.created_at).toLocaleString()}
           </span>
           <button
             onClick={togglePreview}
@@ -75,12 +78,12 @@ export default function PreviewPanel({ item, layout = 'side' }: Props): React.JS
       </div>
 
       <div className="min-h-0 flex-1 overflow-auto">
-        <PreviewContent item={item} />
+        <PreviewContent item={resolvedItem} />
       </div>
 
-      {item.content_type === 'text' && <TextToolbar content={item.content} />}
-      {item.content_type === 'base64' && <Base64Toolbar content={item.content} />}
-      {item.content_type === 'url' && <UrlToolbar content={item.content} />}
+      {resolvedItem.content_type === 'text' && <TextToolbar content={resolvedItem.content} />}
+      {resolvedItem.content_type === 'base64' && <Base64Toolbar content={resolvedItem.content} />}
+      {resolvedItem.content_type === 'url' && <UrlToolbar content={resolvedItem.content} />}
     </div>
   )
 }

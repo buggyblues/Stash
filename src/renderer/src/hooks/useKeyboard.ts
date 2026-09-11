@@ -1,8 +1,7 @@
 import { useEffect, useCallback } from 'react'
 import { useClipboardStore } from '../stores/clipboardStore'
-import type { PanelView } from '../components/Panel/PanelWindow'
 
-export function useKeyboard(view: PanelView): void {
+export function useKeyboard(): void {
   const {
     items,
     selectedIndex,
@@ -18,7 +17,6 @@ export function useKeyboard(view: PanelView): void {
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (view === 'vault') return
       const target = document.activeElement?.tagName
       const isInput = target === 'INPUT' || target === 'TEXTAREA'
 
@@ -94,7 +92,6 @@ export function useKeyboard(view: PanelView): void {
       }
     },
     [
-      view,
       items,
       selectedIndex,
       setSelectedIndex,

@@ -17,7 +17,8 @@ export function createTables(): void {
       tags          TEXT,
       category_id   TEXT,
       created_at    INTEGER NOT NULL,
-      updated_at    INTEGER NOT NULL
+      updated_at    INTEGER NOT NULL,
+      use_count     INTEGER DEFAULT 0
     );
 
     CREATE INDEX IF NOT EXISTS idx_items_created ON clipboard_items(created_at DESC);
@@ -66,52 +67,6 @@ export function createTables(): void {
     CREATE INDEX IF NOT EXISTS idx_item_tags_item ON clipboard_item_tags(item_id);
     CREATE INDEX IF NOT EXISTS idx_item_tags_tag  ON clipboard_item_tags(tag_id);
 
-    CREATE TABLE IF NOT EXISTS vault_items (
-      id            TEXT PRIMARY KEY,
-      type          TEXT NOT NULL,
-      title         TEXT NOT NULL,
-      website       TEXT,
-      favorite      INTEGER DEFAULT 0,
-      tags          TEXT,
-      created_at    INTEGER NOT NULL,
-      updated_at    INTEGER NOT NULL,
-      last_used_at  INTEGER
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_vault_items_type ON vault_items(type);
-    CREATE INDEX IF NOT EXISTS idx_vault_items_updated ON vault_items(updated_at DESC);
-    CREATE INDEX IF NOT EXISTS idx_vault_items_last_used ON vault_items(last_used_at DESC);
-
-    CREATE TABLE IF NOT EXISTS vault_item_secrets (
-      item_id            TEXT PRIMARY KEY,
-      encrypted_payload  TEXT NOT NULL,
-      wrapped_item_key   TEXT NOT NULL,
-      enc_version        INTEGER NOT NULL DEFAULT 1,
-      FOREIGN KEY (item_id) REFERENCES vault_items(id) ON DELETE CASCADE
-    );
-
-    CREATE TABLE IF NOT EXISTS vault_crypto_meta (
-      id                        TEXT PRIMARY KEY,
-      kdf_type                  TEXT NOT NULL,
-      kdf_params                TEXT NOT NULL,
-      salt                      TEXT NOT NULL,
-      dek_wrapped_by_master     TEXT NOT NULL,
-      dek_wrapped_by_recovery   TEXT NOT NULL,
-      created_at                INTEGER NOT NULL,
-      updated_at                INTEGER NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS vault_audit_events (
-      id           TEXT PRIMARY KEY,
-      event_type   TEXT NOT NULL,
-      result       TEXT NOT NULL,
-      reason_code  TEXT,
-      created_at   INTEGER NOT NULL
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_vault_audit_event_type ON vault_audit_events(event_type);
-    CREATE INDEX IF NOT EXISTS idx_vault_audit_created ON vault_audit_events(created_at DESC);
-
     CREATE TABLE IF NOT EXISTS app_settings (
       key    TEXT PRIMARY KEY,
       value  TEXT NOT NULL
@@ -127,19 +82,21 @@ export function createTables(): void {
     db.exec(`ALTER TABLE clipboard_items ADD COLUMN use_count INTEGER DEFAULT 0`)
   }
 
+  // Keep the common ordered queries on the small metadata indexes instead of
+  // sorting rows that contain potentially megabytes of clipboard content.
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_items_pinned_updated
+      ON clipboard_items(is_pinned DESC, updated_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_items_pinned_usage_updated
+      ON clipboard_items(is_pinned DESC, use_count DESC, updated_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_items_type_pinned_updated
+      ON clipboard_items(content_type, is_pinned DESC, updated_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_items_favorite_order
+      ON clipboard_items(is_favorite, is_pinned DESC, updated_at DESC);
+  `)
+
   migrateOldTags()
 
-  // Vault relaxed mode columns
-  const vaultMetaCols = db.prepare("PRAGMA table_info(vault_crypto_meta)").all() as { name: string }[]
-  if (!vaultMetaCols.some(c => c.name === 'security_mode')) {
-    db.exec(`ALTER TABLE vault_crypto_meta ADD COLUMN security_mode TEXT NOT NULL DEFAULT 'strict'`)
-  }
-  if (!vaultMetaCols.some(c => c.name === 'hint_question')) {
-    db.exec(`ALTER TABLE vault_crypto_meta ADD COLUMN hint_question TEXT`)
-  }
-  if (!vaultMetaCols.some(c => c.name === 'dek_wrapped_by_hint')) {
-    db.exec(`ALTER TABLE vault_crypto_meta ADD COLUMN dek_wrapped_by_hint TEXT`)
-  }
 }
 
 function toSlug(name: string): string {

@@ -49,7 +49,7 @@ Z-Paste 需要以下权限才能正常工作：
 
 ## 卸载
 
-将 `/Applications/Z-Paste.app` 移入废纸篓即可。用户数据（剪切板历史、密码保险箱）存储在：
+将 `/Applications/Z-Paste.app` 移入废纸篓即可。用户数据（剪切板历史）存储在：
 
 ```
 ~/Library/Application Support/Z-Paste/

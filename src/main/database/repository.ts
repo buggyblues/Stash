@@ -34,6 +34,7 @@ export interface GetItemsOptions {
   leftFilter?: LeftFilter
   sourceApp?: string
   sortBy?: 'recent' | 'usage'
+  includeContent?: boolean
 }
 
 export interface Tag {
@@ -100,9 +101,38 @@ function maybeDecryptItem(item: ClipboardItem): ClipboardItem {
   return item
 }
 
+// The panel only needs metadata and a short preview to render its list. Keep
+// the potentially very large content column out of the renderer IPC payload
+// and load it by id when an item is actually previewed or edited.
+const ITEM_SUMMARY_COLUMNS = `
+  ci.id,
+  '' AS content,
+  ci.content_type,
+  ci.content_hash,
+  ci.preview,
+  ci.metadata,
+  ci.is_favorite,
+  ci.is_pinned,
+  ci.source_app,
+  ci.tags,
+  ci.title,
+  ci.category_id,
+  ci.created_at,
+  ci.updated_at,
+  ci.use_count`
+
 export function getItems(options: GetItemsOptions = {}): ClipboardItem[] {
   const db = getDatabase()
-  const { limit = 50, offset = 0, contentType, favoritesOnly, leftFilter, sourceApp, sortBy = 'recent' } = options
+  const {
+    limit = 50,
+    offset = 0,
+    contentType,
+    favoritesOnly,
+    leftFilter,
+    sourceApp,
+    sortBy = 'recent',
+    includeContent = true
+  } = options
 
   const conditions: string[] = []
   const params: unknown[] = []
@@ -129,8 +159,9 @@ export function getItems(options: GetItemsOptions = {}): ClipboardItem[] {
     params.push(`%"bundleId":"${sourceApp}"%`)
   }
 
+  const itemColumns = includeContent ? 'ci.*' : ITEM_SUMMARY_COLUMNS
   let query = `
-    SELECT ci.*,
+    SELECT ${itemColumns},
       (SELECT GROUP_CONCAT(t2.slug, ',')
        FROM clipboard_item_tags cit2
        JOIN tags t2 ON t2.id = cit2.tag_id
@@ -155,6 +186,20 @@ export function getItemById(id: string): ClipboardItem | undefined {
     | ClipboardItem
     | undefined
   return item ? maybeDecryptItem(item) : undefined
+}
+
+export function getItemContent(id: string): {
+  content: string
+  content_type: string
+  metadata: string | null
+} | undefined {
+  const item = getItemById(id)
+  if (!item) return undefined
+  return {
+    content: item.content,
+    content_type: item.content_type,
+    metadata: item.metadata
+  }
 }
 
 export function getItemByHash(hash: string): ClipboardItem | undefined {
@@ -205,9 +250,11 @@ export function togglePin(id: string): void {
 
 export function searchItems(query: string): ClipboardItem[] {
   const db = getDatabase()
+  // Searching still reads the content column in SQLite, but returning only
+  // summaries avoids copying up to 50 large results across IPC.
   const items = db
     .prepare(
-      `SELECT ci.*,
+      `SELECT ${ITEM_SUMMARY_COLUMNS},
         (SELECT GROUP_CONCAT(t.slug, ',')
          FROM clipboard_item_tags cit
          JOIN tags t ON t.id = cit.tag_id

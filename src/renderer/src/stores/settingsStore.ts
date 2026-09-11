@@ -15,7 +15,6 @@ export interface Settings {
   historyRetention: number // days, 0 = forever
   maxItems: number
   iCloudSync: boolean
-  encryptionEnabled: boolean
   hasCompletedOnboarding: boolean
   customShortcut: string
   sequencePasteShortcut: string
@@ -44,7 +43,6 @@ interface SettingsState extends Settings {
   setHistoryRetention: (days: number) => void
   setMaxItems: (count: number) => void
   setICloudSync: (value: boolean) => void
-  setEncryptionEnabled: (value: boolean) => void
   setHasCompletedOnboarding: (value: boolean) => void
   setCustomShortcut: (shortcut: string) => void
   setSequencePasteShortcut: (shortcut: string) => void
@@ -122,7 +120,6 @@ const defaults: Settings = {
   historyRetention: 30,
   maxItems: 2000,
   iCloudSync: false,
-  encryptionEnabled: false,
   hasCompletedOnboarding: false,
   customShortcut: 'Shift+CommandOrControl+V',
   sequencePasteShortcut: 'CommandOrControl+;',
@@ -220,11 +217,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     } else {
       window.api.syncStop?.()
     }
-    get().saveSettings()
-  },
-
-  setEncryptionEnabled: (value) => {
-    set({ encryptionEnabled: value })
     get().saveSettings()
   },
 
@@ -327,7 +319,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       historyRetention: state.historyRetention,
       maxItems: normalizeMaxItems(state.maxItems),
       iCloudSync: state.iCloudSync,
-      encryptionEnabled: state.encryptionEnabled,
       hasCompletedOnboarding: state.hasCompletedOnboarding,
       customShortcut: state.customShortcut,
       sequencePasteShortcut: state.sequencePasteShortcut,

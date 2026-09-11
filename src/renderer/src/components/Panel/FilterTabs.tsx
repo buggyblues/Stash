@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowDownWideNarrow } from 'lucide-react'
 import { useClipboardStore } from '../../stores/clipboardStore'
 import { Badge } from '../ui/badge'
 import { cn } from '../../lib/utils'
@@ -16,7 +15,14 @@ const iconCache = new Map<string, string>()
 
 export default function FilterTabs(): React.JSX.Element {
   const { t } = useTranslation()
-  const { filterType, setFilterType, sourceAppFilter, setSourceAppFilter, items, sortBy, setSortBy, leftFilter, typeFilterCollapsed, sourceAppFilterCollapsed } = useClipboardStore()
+  const filterType = useClipboardStore((state) => state.filterType)
+  const setFilterType = useClipboardStore((state) => state.setFilterType)
+  const sourceAppFilter = useClipboardStore((state) => state.sourceAppFilter)
+  const setSourceAppFilter = useClipboardStore((state) => state.setSourceAppFilter)
+  const leftFilter = useClipboardStore((state) => state.leftFilter)
+  const typeFilterCollapsed = useClipboardStore((state) => state.typeFilterCollapsed)
+  const sourceAppFilterCollapsed = useClipboardStore((state) => state.sourceAppFilterCollapsed)
+  const itemsRevision = useClipboardStore((state) => state.itemsRevision)
 
   const tabs = [
     { label: t('panel.filter.all'), value: null },
@@ -57,15 +63,16 @@ export default function FilterTabs(): React.JSX.Element {
         })
       }
     })
-  }, [items])
+  }, [itemsRevision])
 
-  // Load content type counts whenever items, leftFilter, or sourceAppFilter change
+  // Counts depend on data/filter changes, not on a single item's lazy content
+  // being hydrated in the renderer.
   useEffect(() => {
     window.api.getContentTypeCounts({
       leftFilter: leftFilter,
       sourceApp: sourceAppFilter || undefined
     }).then(setTypeCounts)
-  }, [items, leftFilter, sourceAppFilter])
+  }, [itemsRevision, leftFilter, sourceAppFilter])
 
   const showTypeFilter = !typeFilterCollapsed
   const showSourceApps = !sourceAppFilterCollapsed && sourceApps.length > 0
@@ -102,19 +109,7 @@ export default function FilterTabs(): React.JSX.Element {
               </Badge>
             )
           })}
-          <div className="mx-0.5 h-4 w-px bg-border/70" />
-          <Badge
-            variant={sortBy === 'usage' ? 'default' : 'secondary'}
-            className={cn(
-              'flex cursor-pointer items-center gap-1 whitespace-nowrap border px-2.5 py-1 text-[11px]',
-              sortBy !== 'usage' &&
-                'border-transparent bg-transparent text-muted-foreground hover:border-border/60 hover:bg-background/65 hover:text-foreground'
-            )}
-            onClick={() => setSortBy(sortBy === 'usage' ? 'recent' : 'usage')}
-          >
-            <ArrowDownWideNarrow className="h-3 w-3" aria-hidden="true" />
-            {t('panel.filter.byUsage')}
-          </Badge>
+
         </div>
       )}
 

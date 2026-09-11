@@ -34,58 +34,6 @@ interface TagWithCount {
   count: number
 }
 
-type VaultItemType = 'login' | 'secure_note'
-
-interface VaultItemMeta {
-  id: string
-  type: VaultItemType
-  title: string
-  website: string | null
-  favorite: number
-  tags: string | null
-  created_at: number
-  updated_at: number
-  last_used_at: number | null
-}
-
-type VaultItemDetail =
-  | {
-      meta: VaultItemMeta
-      type: 'login'
-      fields: {
-        username: string
-        password: string
-        notes: string | null
-        totpSecret: string | null
-      }
-    }
-  | {
-      meta: VaultItemMeta
-      type: 'secure_note'
-      fields: {
-        content: string
-      }
-    }
-
-interface VaultSecurityState {
-  locked: boolean
-  hasVaultSetup: boolean
-  autoLockMinutes: number
-  lockOnBlur: boolean
-  lastUnlockMethod: 'master' | 'recovery' | 'biometric' | 'hint' | null
-  hasBiometricUnlock: boolean
-  securityMode: 'strict' | 'relaxed'
-  hintQuestion: string | null
-}
-
-interface VaultAuditEvent {
-  id: string
-  event_type: string
-  result: string
-  reason_code: string | null
-  created_at: number
-}
-
 interface ZPasteAPI {
   getItems: (options?: {
     limit?: number
@@ -95,7 +43,13 @@ interface ZPasteAPI {
     leftFilter?: LeftFilter
     sourceApp?: string
     sortBy?: 'recent' | 'usage'
+    includeContent?: boolean
   }) => Promise<ClipboardItem[]>
+  getItemContent: (id: string) => Promise<{
+    content: string
+    content_type: string
+    metadata: string | null
+  } | null>
   searchItems: (query: string) => Promise<ClipboardItem[]>
   deleteItem: (id: string) => Promise<void>
   toggleFavorite: (id: string) => Promise<void>
@@ -154,7 +108,6 @@ interface ZPasteAPI {
   onNewItem: (callback: (item: ClipboardItem) => void) => () => void
   onPanelShown: (callback: () => void) => () => void
   onPanelHidden: (callback: () => void) => () => void
-  onPanelSetView: (callback: (view: 'clipboard' | 'vault') => void) => () => void
   // Widget
   widgetSetPinned: (pinned: boolean) => Promise<void>
   widgetSavePosition: (x: number, y: number) => Promise<void>
@@ -162,107 +115,6 @@ interface ZPasteAPI {
   widgetSetFollowFilter: (value: boolean) => Promise<void>
   onWidgetShown: (callback: () => void) => () => void
   onWidgetPinnedChanged: (callback: (pinned: boolean) => void) => () => void
-  // Vault
-  vaultListItems: (options?: {
-    query?: string
-    type?: VaultItemType
-    limit?: number
-    offset?: number
-  }) => Promise<VaultItemMeta[]>
-  vaultCreateLogin: (input: {
-    title: string
-    website?: string | null
-    username: string
-    password: string
-    notes?: string | null
-    totpSecret?: string | null
-    favorite?: boolean
-    tags?: string[] | null
-  }) => Promise<VaultItemMeta>
-  vaultCreateSecureNote: (input: {
-    title: string
-    content: string
-    favorite?: boolean
-    tags?: string[] | null
-  }) => Promise<VaultItemMeta>
-  vaultUpdateItem: (input: {
-    id: string
-    title?: string
-    website?: string | null
-    favorite?: boolean
-    tags?: string[] | null
-    loginFields?: {
-      username: string
-      password: string
-      notes?: string | null
-      totpSecret?: string | null
-    }
-    secureNoteFields?: {
-      content: string
-    }
-  }) => Promise<void>
-  vaultGetItemDetail: (id: string) => Promise<VaultItemDetail | null>
-  vaultDeleteItem: (id: string) => Promise<void>
-  vaultSetupMasterPassword: (input: {
-    masterPassword: string
-    securityMode: 'strict' | 'relaxed'
-    hintQuestion?: string
-    hintAnswer?: string
-  }) => Promise<{ recoveryKey: string }>
-  vaultUnlock: (masterPassword: string) => Promise<{ ok: true }>
-  vaultUnlockWithRecoveryKey: (recoveryKey: string) => Promise<{ ok: true }>
-  vaultUnlockWithBiometric: () => Promise<{ ok: true }>
-  vaultUnlockWithHint: (hintAnswer: string) => Promise<{ ok: true }>
-  vaultResetPassword: (input: {
-    newMasterPassword: string
-    hintQuestion?: string
-    hintAnswer?: string
-  }) => Promise<{ recoveryKey: string }>
-  vaultResetVault: () => Promise<void>
-  vaultLock: () => Promise<{ ok: true }>
-  vaultGetSecurityState: () => Promise<VaultSecurityState>
-  vaultListAuditEvents: (limit?: number) => Promise<VaultAuditEvent[]>
-  vaultGeneratePassword: (options?: {
-    length?: number
-    useUppercase?: boolean
-    useLowercase?: boolean
-    useNumbers?: boolean
-    useSymbols?: boolean
-  }) => Promise<string>
-  vaultGetTotpCode: (id: string) => Promise<{ code: string; remainingSeconds: number } | null>
-  vaultAutoType: (input: { id: string; submit?: boolean; stepDelayMs?: number }) => Promise<{
-    ok: true
-    fallbackCopied: boolean
-  }>
-  vaultSetLockOnBlur: (enabled: boolean) => Promise<void>
-  vaultSetAutoLockMinutes: (minutes: number) => Promise<void>
-  vaultCopyToClipboard: (text: string) => Promise<void>
-  vaultImport: (input: {
-    filePath: string
-    format: 'chrome-csv' | '1password-csv' | 'bitwarden-json'
-  }) => Promise<{
-    total: number
-    imported: number
-    skipped: number
-    errors: string[]
-  }>
-  vaultImportPreview: (input: {
-    filePath: string
-    format: 'chrome-csv' | '1password-csv' | 'bitwarden-json'
-  }) => Promise<{
-    total: number
-    entries: Array<{
-      name: string
-      url?: string
-      username?: string
-      password?: string
-    }>
-  }>
-  showOpenDialog: (options: {
-    title?: string
-    filters?: Array<{ name: string; extensions: string[] }>
-    properties?: string[]
-  }) => Promise<{ canceled: boolean; filePaths: string[] }>
   // App info
   getVersion: () => Promise<string>
   checkForUpdates: () => Promise<{ status: 'available' | 'up-to-date' | 'not-available' | 'error'; version?: string; message?: string }>

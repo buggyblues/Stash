@@ -9,8 +9,6 @@ export type LayoutMode = 'center' | 'side' | 'bottom'
 export class WindowManager {
   private mainWindow: BrowserWindow | null = null
   private previousAppBundleId: string | null = null
-  private blurSuppressed = false
-  private vaultSession: { lockOnHide: () => Promise<void> } | null = null
   private layoutMode: LayoutMode
   private animationTimer: ReturnType<typeof setInterval> | null = null
   private static readonly SETTINGS_FILE = 'window-settings.json'
@@ -80,7 +78,6 @@ export class WindowManager {
     })
 
     this.mainWindow.on('blur', () => {
-      if (this.blurSuppressed) return
       this.hide()
     })
 
@@ -258,19 +255,6 @@ export class WindowManager {
     }
   }
 
-  showWithView(view: 'clipboard' | 'vault'): void {
-    const wasVisible = this.mainWindow?.isVisible()
-    this.show()
-    if (!wasVisible) {
-      // wait for renderer to mount before sending view switch
-      this.mainWindow?.webContents.once('did-finish-load', () => {
-        this.safeSend('panel:set-view', view)
-      })
-    } else {
-      this.safeSend('panel:set-view', view)
-    }
-  }
-
   hide(): void {
     if (this.mainWindow && !this.mainWindow.isDestroyed()) {
       // Clear any show animation in progress
@@ -281,26 +265,11 @@ export class WindowManager {
       this.mainWindow.setOpacity(1) // reset to ensure clean state
       this.mainWindow.hide()
       this.safeSend('panel:hidden')
-      if (this.vaultSession) {
-        void this.vaultSession.lockOnHide()
-      }
     }
   }
 
   getPreviousAppBundleId(): string | null {
     return this.previousAppBundleId
-  }
-
-  suppressBlur(): void {
-    this.blurSuppressed = true
-  }
-
-  restoreBlur(): void {
-    this.blurSuppressed = false
-  }
-
-  setVaultSession(session: { lockOnHide: () => Promise<void> }): void {
-    this.vaultSession = session
   }
 
   getWindow(): BrowserWindow | null {

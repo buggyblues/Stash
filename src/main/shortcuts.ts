@@ -31,11 +31,7 @@ export class ShortcutManager {
 
   register(): void {
     globalShortcut.register('Shift+CommandOrControl+V', () => {
-      this.windowManager.showWithView('clipboard')
-    })
-
-    globalShortcut.register('Shift+CommandOrControl+P', () => {
-      this.windowManager.showWithView('vault')
+      this.windowManager.show()
     })
 
     this.registerSequencePaste('CommandOrControl+;')
@@ -186,17 +182,30 @@ export class ShortcutManager {
   }
 
   addToQueue(item: QueueItem): void {
-    if (this.sequenceQueue.some((q) => q.id === item.id)) return
-    this.sequenceQueue.push(item)
+    const resolved = this.resolveQueueItem(item.id)
+    if (!resolved || this.sequenceQueue.some((q) => q.id === resolved.id)) return
+    this.sequenceQueue.push(resolved)
     this.notifyRenderer('queue:updated', { count: this.sequenceQueue.length })
   }
 
   addMultipleToQueue(items: QueueItem[]): void {
     const existingIds = new Set(this.sequenceQueue.map((q) => q.id))
-    const newItems = items.filter((i) => !existingIds.has(i.id))
+    const newItems = items
+      .map((item) => this.resolveQueueItem(item.id))
+      .filter((item): item is QueueItem => !!item && !existingIds.has(item.id))
     if (newItems.length === 0) return
     this.sequenceQueue.push(...newItems)
     this.notifyRenderer('queue:updated', { count: this.sequenceQueue.length })
+  }
+
+  private resolveQueueItem(id: string): QueueItem | null {
+    const item = repository.getItemById(id)
+    if (!item) return null
+    return {
+      id: item.id,
+      content: item.content,
+      content_type: item.content_type
+    }
   }
 
   clearQueue(): void {
@@ -228,11 +237,7 @@ export class ShortcutManager {
     if (config.cycleLayout) this.cycleLayoutShortcut = config.cycleLayout
 
     globalShortcut.register(config.panelShortcut || 'Shift+CommandOrControl+V', () => {
-      this.windowManager.showWithView('clipboard')
-    })
-
-    globalShortcut.register('Shift+CommandOrControl+P', () => {
-      this.windowManager.showWithView('vault')
+      this.windowManager.show()
     })
 
     this.registerSequencePaste(config.sequencePaste || 'CommandOrControl+;')

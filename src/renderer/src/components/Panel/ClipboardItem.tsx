@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import i18n from '../../i18n'
 import { ClipboardItem, useClipboardStore } from '../../stores/clipboardStore'
 import { useAppIcon } from '../../hooks/useAppIcon'
+import { useClipboardItemContent } from '../../hooks/useClipboardItemContent'
 import { cn } from '../../lib/utils'
 import { getContentTypeLabel } from '../../utils/contentType'
 import { getContextMenuPosition } from '../../utils/contextMenu'
@@ -241,7 +242,7 @@ function ClipboardItemRow({
                 </p>
               ) : null}
               <p className={cn('truncate text-[13px] leading-5 transition-colors', isSelected ? 'font-semibold' : 'font-medium')}>
-                {item.preview || item.content}
+                {item.preview || item.content || getContentTypeLabel(t, item.content_type)}
               </p>
               <div className="mt-1 flex min-w-0 items-center gap-1.5 text-[10px] text-muted-foreground">
                 <span className="rounded-full bg-secondary px-1.5 py-0.5 uppercase tracking-[0.16em] text-[9px] text-muted-foreground">
@@ -370,9 +371,12 @@ function ImageRow({
   index: number
   isSelected: boolean
 }): React.JSX.Element {
-  const src = item.content.startsWith('/')
-    ? `file://${item.content}`
-    : `data:image/png;base64,${item.content}`
+  const content = useClipboardItemContent(item.id, item.content)
+  const src = content
+    ? content.startsWith('/')
+      ? `file://${content}`
+      : `data:image/png;base64,${content}`
+    : null
 
   return (
     <div className="flex w-full min-w-0 items-center gap-2.5">
@@ -387,12 +391,18 @@ function ImageRow({
           </span>
         )}
       </div>
-      <img
-        src={src}
-        alt=""
-        className="h-12 w-[4.5rem] shrink-0 rounded-[0.9rem] border border-border/60 object-cover"
-        loading="lazy"
-      />
+      {src ? (
+        <img
+          src={src}
+          alt=""
+          className="h-12 w-[4.5rem] shrink-0 rounded-[0.9rem] border border-border/60 object-cover"
+          loading="lazy"
+        />
+      ) : (
+        <div className="flex h-12 w-[4.5rem] shrink-0 items-center justify-center rounded-[0.9rem] border border-border/60 bg-muted text-muted-foreground">
+          <ImageIcon className="h-4 w-4" />
+        </div>
+      )}
       <div className="flex-1 min-w-0">
         <p className={cn('truncate text-[13px] leading-5', isSelected ? 'font-semibold' : 'font-medium')}>
           {item.preview || i18n.t('panel.image.fallback')}

@@ -1,9 +1,0 @@
-{
-  "name": "com.zpaste.stash",
-  "description": "Stash Password Manager Native Messaging Host",
-  "path": "/PLACEHOLDER_PATH/native-host.js",
-  "type": "stdio",
-  "allowed_origins": [
-    "chrome-extension://EXTENSION_ID_PLACEHOLDER/"
-  ]
-}

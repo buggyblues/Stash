@@ -6,15 +6,6 @@ type LeftFilter =
   | { type: 'starred' }
   | { type: 'tag'; slug: string }
 
-type VaultItemType = 'login' | 'secure_note'
-
-type VaultListOptions = {
-  query?: string
-  type?: VaultItemType
-  limit?: number
-  offset?: number
-}
-
 const api = {
   getItems: (options?: {
     limit?: number
@@ -23,7 +14,9 @@ const api = {
     favoritesOnly?: boolean
     leftFilter?: LeftFilter
     sortBy?: 'recent' | 'usage'
+    includeContent?: boolean
   }) => ipcRenderer.invoke('clipboard:getItems', options),
+  getItemContent: (id: string) => ipcRenderer.invoke('clipboard:getItemContent', id),
   searchItems: (query: string) => ipcRenderer.invoke('clipboard:searchItems', query),
   deleteItem: (id: string) => ipcRenderer.invoke('clipboard:deleteItem', id),
   toggleFavorite: (id: string) => ipcRenderer.invoke('clipboard:toggleFavorite', id),
@@ -118,10 +111,6 @@ const api = {
     ipcRenderer.on('panel:hidden', () => callback())
     return () => ipcRenderer.removeAllListeners('panel:hidden')
   },
-  onPanelSetView: (callback: (view: 'clipboard' | 'vault') => void) => {
-    ipcRenderer.on('panel:set-view', (_, view) => callback(view))
-    return () => ipcRenderer.removeAllListeners('panel:set-view')
-  },
   // Widget
   widgetSetPinned: (pinned: boolean) => ipcRenderer.invoke('widget:setPinned', pinned),
   widgetSavePosition: (x: number, y: number) => ipcRenderer.invoke('widget:savePosition', x, y),
@@ -136,87 +125,6 @@ const api = {
     ipcRenderer.on('widget:pinnedChanged', (_, pinned) => callback(pinned))
     return () => ipcRenderer.removeAllListeners('widget:pinnedChanged')
   },
-  // Vault
-  vaultListItems: (options?: VaultListOptions) => ipcRenderer.invoke('vault:listItems', options),
-  vaultCreateLogin: (input: {
-    title: string
-    website?: string | null
-    username: string
-    password: string
-    notes?: string | null
-    totpSecret?: string | null
-    favorite?: boolean
-    tags?: string[] | null
-  }) => ipcRenderer.invoke('vault:createLogin', input),
-  vaultCreateSecureNote: (input: {
-    title: string
-    content: string
-    favorite?: boolean
-    tags?: string[] | null
-  }) => ipcRenderer.invoke('vault:createSecureNote', input),
-  vaultUpdateItem: (input: {
-    id: string
-    title?: string
-    website?: string | null
-    favorite?: boolean
-    tags?: string[] | null
-    loginFields?: {
-      username: string
-      password: string
-      notes?: string | null
-      totpSecret?: string | null
-    }
-    secureNoteFields?: { content: string }
-  }) => ipcRenderer.invoke('vault:updateItem', input),
-  vaultGetItemDetail: (id: string) => ipcRenderer.invoke('vault:getItemDetail', id),
-  vaultDeleteItem: (id: string) => ipcRenderer.invoke('vault:delete', id),
-  vaultSetupMasterPassword: (input: {
-    masterPassword: string
-    securityMode: 'strict' | 'relaxed'
-    hintQuestion?: string
-    hintAnswer?: string
-  }) => ipcRenderer.invoke('vault:setupMasterPassword', input),
-  vaultUnlock: (masterPassword: string) => ipcRenderer.invoke('vault:unlock', masterPassword),
-  vaultUnlockWithRecoveryKey: (recoveryKey: string) =>
-    ipcRenderer.invoke('vault:unlockWithRecoveryKey', recoveryKey),
-  vaultUnlockWithBiometric: () => ipcRenderer.invoke('vault:unlockWithBiometric'),
-  vaultLock: () => ipcRenderer.invoke('vault:lock'),
-  vaultResetVault: () => ipcRenderer.invoke('vault:resetVault'),
-  vaultGetSecurityState: () => ipcRenderer.invoke('vault:getSecurityState'),
-  vaultListAuditEvents: (limit?: number) => ipcRenderer.invoke('vault:listAuditEvents', limit),
-  vaultGeneratePassword: (options?: {
-    length?: number
-    useUppercase?: boolean
-    useLowercase?: boolean
-    useNumbers?: boolean
-    useSymbols?: boolean
-  }) => ipcRenderer.invoke('vault:generatePassword', options),
-  vaultGetTotpCode: (id: string) => ipcRenderer.invoke('vault:getTotpCode', id),
-  vaultAutoType: (input: { id: string; submit?: boolean; stepDelayMs?: number }) =>
-    ipcRenderer.invoke('vault:autoType', input),
-  vaultResetPassword: (input: {
-    newMasterPassword: string
-    hintQuestion?: string
-    hintAnswer?: string
-  }) => ipcRenderer.invoke('vault:resetPassword', input),
-  vaultUnlockWithHint: (hintAnswer: string) =>
-    ipcRenderer.invoke('vault:unlockWithHint', hintAnswer),
-  vaultSetLockOnBlur: (enabled: boolean) =>
-    ipcRenderer.invoke('vault:setLockOnBlur', enabled),
-  vaultSetAutoLockMinutes: (minutes: number) =>
-    ipcRenderer.invoke('vault:setAutoLockMinutes', minutes),
-  vaultCopyToClipboard: (text: string) => ipcRenderer.invoke('vault:copyToClipboard', text),
-  vaultImport: (input: { filePath: string; format: 'chrome-csv' | '1password-csv' | 'bitwarden-json' }) =>
-    ipcRenderer.invoke('vault:import', input),
-  vaultImportPreview: (input: {
-    filePath: string
-    format: 'chrome-csv' | '1password-csv' | 'bitwarden-json'
-  }) => ipcRenderer.invoke('vault:importPreview', input),
-  showOpenDialog: (options: {
-    title?: string
-    filters?: Array<{ name: string; extensions: string[] }>
-    properties?: string[]
-  }) => ipcRenderer.invoke('dialog:showOpenDialog', options),
   // App info
   getVersion: () => ipcRenderer.invoke('app:getVersion'),
   checkForUpdates: () => ipcRenderer.invoke('app:checkForUpdates') as Promise<{ status: 'available' | 'up-to-date' | 'not-available' | 'error'; version?: string; message?: string }>,

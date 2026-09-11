@@ -8,7 +8,6 @@ import { nanoid } from 'nanoid'
 import { writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
-import { isVaultContent } from './vault-clipboard-guard'
 
 const MAX_IMAGE_BASE64_SIZE = 5 * 1024 * 1024
 
@@ -51,9 +50,6 @@ export class ClipboardMonitor {
     const hash = this.computeHash(text)
     if (hash === this.lastTextHash) return false
     this.lastTextHash = hash
-
-    // Skip recording vault-originated clipboard content (passwords, TOTP, etc.)
-    if (isVaultContent(text)) return true
 
     const existing = repository.getItemByHash(hash)
     if (existing) {
