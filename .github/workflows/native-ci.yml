@@ -23,6 +23,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Verify native toolchain and generated locales
+        run: |
+          swift --version
+          xcrun --sdk macosx --show-sdk-version
+          python3 swift/Scripts/generate-locales.py --check
       - run: make test
       - run: make build
         env:
