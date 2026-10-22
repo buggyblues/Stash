@@ -17,6 +17,15 @@ final class NativeRegressionTests: XCTestCase {
                       preview: "preview-" + id, createdAt: timestamp, updatedAt: timestamp)
     }
 
+    @MainActor private func waitForPreview(_ id: String, in model: PanelViewModel,
+                                          file: StaticString = #filePath, line: UInt = #line) async throws {
+        let deadline = ContinuousClock.now.advanced(by: .seconds(5))
+        while model.previewItem?.id != id && ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        XCTAssertEqual(model.previewItem?.id, id, file: file, line: line)
+    }
+
     func testDefaultCarbonHotKeysUseMacVirtualCodes() {
         let expected: [String: UInt32] = ["Shift+CommandOrControl+V": 9, "CommandOrControl+J": 38,
             "Alt+W": 13, "Alt+1": 18, "Alt+5": 23, "Alt+9": 25,
@@ -114,11 +123,9 @@ final class NativeRegressionTests: XCTestCase {
         try repo.toggleFavorite("first")
         let model = PanelViewModel(repository: repo)
         model.loadItems()
-        try await Task.sleep(nanoseconds: 200_000_000)
-        XCTAssertEqual(model.previewItem?.id, "first")
+        try await waitForPreview("first", in: model)
         model.deleteItem("first")
-        try await Task.sleep(nanoseconds: 200_000_000)
-        XCTAssertEqual(model.previewItem?.id, "second")
+        try await waitForPreview("second", in: model)
         XCTAssertEqual(model.starredCount, 0)
         XCTAssertEqual(model.typeCounts["text"], 1)
     }
