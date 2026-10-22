@@ -7,7 +7,7 @@ Swift is the only active app implementation. Electron source is archived under `
 - `Native CI and Release` runs complete native tests and an ad-hoc app build on GitHub's `macos-26` runner. Trusted main-branch changes also run headless tests on a dedicated Mac mini runner.
 - The Mac mini runner must be registered to this repository with labels `self-hosted`, `macOS`, `ARM64`, `macmini`, `stash`. It uses its own installation directory and must not reconfigure an existing runner for another repository.
 - Pull requests use GitHub-hosted runners. The persistent Mac mini never runs pull-request code.
-- The release stage requires the Mac mini test gate, then builds Apple Silicon on `macos-26` and Intel on `macos-26-intel`. The build requires Swift 6.2+ and macOS SDK 26+ so the Liquid Glass implementation is compiled into both packages.
+- The packaging stage follows the complete native tests and builds Apple Silicon on `macos-26` and Intel on `macos-26-intel`. The build requires Swift 6.2+ and macOS SDK 26+ so the Liquid Glass implementation is compiled into both packages.
 
 The machine's FileVault remains enabled. A user LaunchAgent runs after that user logs in; it does not imply unattended recovery after arbitrary power loss.
 
@@ -27,7 +27,7 @@ Signing uses a temporary keychain on disposable GitHub runners. Cleanup restores
 2. Run `make test`, `make build` and `make release` locally. The default release mode produces ad-hoc ZIP/DMG validation packages; these must not be distributed as a public release.
 3. Push main and confirm both native CI jobs succeed. A manual `Native CI and Release` run with mode `verify` exercises the architecture matrix without public uploads.
 4. Push `v<version>` after validation. The tag must match Info.plist. The workflow builds and signs the native app, notarizes/staples the app and DMG, verifies the executable architecture and signature, and emits per-architecture SHA-256 manifests.
-5. The publish job requires both architectures. It validates the manifests, uploads the versioned packages and `SHA256SUMS` to COS, downloads the public CDN bytes and compares their hashes, then creates the GitHub Release with native assets.
+5. The publish job requires both architectures and the Mac mini test gate, and verifies that the version tag points to the tested commit before any public upload. It validates the manifests, uploads the versioned packages and `SHA256SUMS` to COS, downloads the public CDN bytes and compares their hashes, then creates the GitHub Release with native assets.
 
 Paths are case-sensitive:
 
