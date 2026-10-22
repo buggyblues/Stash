@@ -1,0 +1,42 @@
+name: Native Swift CI
+
+on:
+  push:
+    branches: [main]
+    paths: ['swift/**', 'Makefile', '.github/workflows/native-ci.yml']
+  pull_request:
+    paths: ['swift/**', 'Makefile', '.github/workflows/native-ci.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native:
+    runs-on: macos-26
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: make test
+      - run: make build
+        env:
+          STASH_SIGN_IDENTITY: '-'
+      - name: Verify native bundle metadata
+        run: |
+          test "$(/usr/libexec/PlistBuddy -c 'Print :StashImplementation' swift/build/Stash.app/Contents/Info.plist)" = swift
+          codesign --verify --deep --strict swift/build/Stash.app
+  mini:
+    if: github.event_name != 'pull_request' && github.repository == 'buggyblues/Stash' && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, macOS, ARM64, macmini, stash]
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: make test-headless

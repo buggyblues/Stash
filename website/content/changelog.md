@@ -4,40 +4,16 @@ title: 更新日志
 
 # 更新日志
 
-## v1.1.1
+## 2.0.0 · Swift 原生版
 
-### 改进
-- 文档站迁移至 Nextra 4（Next.js App Router）
+- 全面切换到 Swift / SwiftUI / AppKit，Electron 1.x 正式废弃。
+- macOS 26+ 原生 Liquid Glass，旧系统使用系统材质回退。
+- 中央分栏、侧边面板和底部卡片布局。
+- 原生设置导航，标题栏、侧栏和内容统一跟随外观。
+- 搜索、类型/来源/标签筛选、收藏与置顶。
+- 原生内容预览、序列队列、批量粘贴和桌面小组件。
+- 本地 SQLite 存储，可选 iCloud Drive 同步。
+- 移除模板功能。
+- 原生 arm64 / Intel 安装包，以及 Swift 测试、签名和公证发布流程。
 
----
-
-## v1.1.0
-
-### 改进
-- 重写 README，面向普通用户的产品介绍风格
-- 新增官方文档站：[perseveringman.github.io/z-paste](https://perseveringman.github.io/z-paste/)
-
----
-
-## v1.0.1
-
-### 修复
-- 修复自动更新错误日志和定时器清理问题
-
-### 改进
-- 集成 electron-updater 自动更新，应用可在后台静默检查并安装新版本
-
----
-
-## v1.0.0 · 首次发布
-
-- 剪切板历史管理（文本、图片、代码、URL、颜色、JSON、Base64 等类型）
-- 全局快捷键 Shift+Cmd+V 唤起面板
-- 模糊搜索 + 数字键快速粘贴
-- 收藏与置顶
-- 序列粘贴 / 批量粘贴
-- 模板片段管理
-- 小组件（Mini Widget）
-- iCloud Drive 同步
-- 系统托盘集成
-- 深色 / 浅色主题
+1.x 历史实现保存在 `legacy/electron/`，不再维护或发布。

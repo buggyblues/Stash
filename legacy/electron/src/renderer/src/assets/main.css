@@ -1,0 +1,289 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+    /* ── Apple macOS Modern Design System · Light ── */
+    --background: 220 20% 98%;
+    --foreground: 240 10% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 12%;
+    --primary: 21 100% 64%;          /* Stash Accent Orange #FF7F43 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 94%;
+    --secondary-foreground: 240 10% 12%;
+    --muted: 220 14% 94%;
+    --muted-foreground: 240 4% 46%;
+    --accent: 21 100% 64%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 78% 54%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 6% 88%;
+    --input: 220 14% 93%;
+    --ring: 21 100% 64%;
+    --link: 263 80% 60%;
+    --radius: 0.85rem;
+
+    /* Apple Liquid Glass surfaces (Light) */
+    --glass-panel-bg: rgba(248, 249, 252, 0.78);
+    --glass-panel-border: rgba(0, 0, 0, 0.08);
+    --glass-panel-inner: inset 0 1px 0 0 rgba(255, 255, 255, 0.95), inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+    --panel-shadow: 0 24px 64px -12px rgba(0, 0, 0, 0.18), 0 8px 24px -4px rgba(0, 0, 0, 0.08), 0 0 1px 1px rgba(0, 0, 0, 0.04);
+    --panel-inner: var(--glass-panel-inner);
+
+    --glass-subtle-bg: rgba(255, 255, 255, 0.55);
+    --glass-subtle-border: rgba(0, 0, 0, 0.06);
+
+    --glass-card-bg: rgba(255, 255, 255, 0.65);
+    --glass-card-border: rgba(0, 0, 0, 0.07);
+    --glass-card-inner: inset 0 1px 0 0 rgba(255, 255, 255, 0.9);
+    --glass-card-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.05), 0 1px 3px 0 rgba(0, 0, 0, 0.03);
+
+    /* Surface layers */
+    --surface-strong: 0 0% 98%;
+    --surface-soft: 220 14% 95%;
+    --surface-tint: 220 18% 97%;
+
+    /* Syntax highlighting */
+    --syntax-key: 263 80% 50%;
+    --syntax-string: 152 55% 35%;
+    --syntax-number: 21 100% 50%;
+    --syntax-boolean: 47 100% 45%;
+    --syntax-null: 0 65% 50%;
+  }
+
+  .dark {
+    color-scheme: dark;
+    /* ── Apple macOS Modern Design System · Dark (Sequoia Slate Glass) ── */
+    --background: 240 6% 9%;
+    --foreground: 0 0% 96%;
+    --card: 240 5% 15%;
+    --card-foreground: 0 0% 96%;
+    --popover: 240 5% 13%;
+    --popover-foreground: 0 0% 96%;
+    --primary: 21 100% 68%;
+    --primary-foreground: 0 0% 8%;
+    --secondary: 240 4% 18%;
+    --secondary-foreground: 0 0% 96%;
+    --muted: 240 4% 16%;
+    --muted-foreground: 240 5% 64%;
+    --accent: 21 100% 68%;
+    --accent-foreground: 0 0% 8%;
+    --destructive: 0 74% 60%;
+    --destructive-foreground: 0 0% 8%;
+    --border: 240 4% 22%;
+    --input: 240 4% 18%;
+    --ring: 21 100% 68%;
+    --link: 263 80% 72%;
+
+    /* Apple Liquid Glass surfaces (Dark) */
+    --glass-panel-bg: rgba(28, 29, 34, 0.80);
+    --glass-panel-border: rgba(255, 255, 255, 0.12);
+    --glass-panel-inner: inset 0 1px 0 0 rgba(255, 255, 255, 0.18), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+    --panel-shadow: 0 32px 72px -12px rgba(0, 0, 0, 0.7), 0 12px 32px -4px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    --panel-inner: var(--glass-panel-inner);
+
+    --glass-subtle-bg: rgba(36, 37, 44, 0.60);
+    --glass-subtle-border: rgba(255, 255, 255, 0.08);
+
+    --glass-card-bg: rgba(44, 45, 53, 0.55);
+    --glass-card-border: rgba(255, 255, 255, 0.09);
+    --glass-card-inner: inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
+    --glass-card-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.4), 0 1px 3px 0 rgba(0, 0, 0, 0.25);
+
+    /* Surface layers */
+    --surface-strong: 240 6% 12%;
+    --surface-soft: 240 5% 16%;
+    --surface-tint: 240 5% 14%;
+
+    /* Syntax highlighting */
+    --syntax-key: 263 80% 72%;
+    --syntax-string: 152 55% 60%;
+    --syntax-number: 21 100% 70%;
+    --syntax-boolean: 47 80% 65%;
+    --syntax-null: 0 65% 60%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    background: transparent !important;
+  }
+
+  body {
+    @apply text-foreground;
+    overflow: hidden;
+    user-select: none;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", "PingFang SC", "Helvetica Neue", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    background: transparent;
+    letter-spacing: -0.01em;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    letter-spacing: inherit;
+  }
+
+  h1,
+  h2,
+  h3,
+  [data-display='true'] {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif;
+    letter-spacing: -0.022em;
+    font-weight: 600;
+  }
+
+  code,
+  pre,
+  kbd,
+  samp {
+    font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, monospace;
+  }
+
+  button,
+  [role='button'] {
+    touch-action: manipulation;
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.28);
+    color: hsl(var(--foreground));
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* ── Apple Liquid Glass Vibrancy Surfaces ── */
+
+  /* Master Window Shell Glass */
+  .surface-panel {
+    background: var(--glass-panel-bg);
+    backdrop-filter: blur(40px) saturate(210%);
+    -webkit-backdrop-filter: blur(40px) saturate(210%);
+    border: 1px solid var(--glass-panel-border);
+    box-shadow: var(--glass-panel-inner), var(--panel-shadow);
+  }
+
+  /* Toolbar / Filter Bars / Header subtle glass */
+  .surface-subtle {
+    background: var(--glass-subtle-bg);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    border-color: var(--glass-subtle-border);
+  }
+
+  /* Inset Floating Cards with Apple Specular Highlight */
+  .surface-card {
+    background: var(--glass-card-bg);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid var(--glass-card-border);
+    box-shadow: var(--glass-card-inner), var(--glass-card-shadow);
+  }
+
+  /* Standard Apple Inset Highlight */
+  .hairline {
+    box-shadow: var(--glass-panel-inner);
+  }
+
+  /* Apple Focus Ring Glow */
+  .mac-focus {
+    outline: none;
+    box-shadow: 0 0 0 3px hsl(var(--ring) / 0.35), 0 0 0 1px hsl(var(--ring));
+  }
+
+  /* Apple Segmented Control Track */
+  .mac-segmented-track {
+    background: rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    box-shadow: inset 0 1px 1.5px rgba(0, 0, 0, 0.06);
+  }
+  .dark .mac-segmented-track {
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+  }
+
+  /* Apple Segmented Active Pill */
+  .mac-segmented-active {
+    background: rgba(255, 255, 255, 0.95);
+    color: hsl(var(--foreground));
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 0.5px 1px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  }
+  .dark .mac-segmented-active {
+    background: rgba(255, 255, 255, 0.16);
+    color: hsl(var(--foreground));
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  /* Apple Inset Grouped Section Card (like macOS System Settings) */
+  .mac-group-card {
+    background: var(--glass-card-bg);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid var(--glass-card-border);
+    border-radius: 1.15rem;
+    box-shadow: var(--glass-card-inner), var(--glass-card-shadow);
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* macOS System Capsule Scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(120, 120, 128, 0.22);
+  border-radius: 999px;
+  border: 1.5px solid transparent;
+  background-clip: padding-box;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(120, 120, 128, 0.45);
+  background-clip: padding-box;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

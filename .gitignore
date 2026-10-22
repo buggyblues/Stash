@@ -3,3 +3,10 @@ out/
 dist/
 *.log
 .DS_Store
+
+swift/.build/
+swift/build/
+swift/.swiftpm/
+
+swift/Verification/
+__pycache__/

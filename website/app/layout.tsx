@@ -4,10 +4,10 @@ import 'nextra-theme-docs/style.css'
 
 export const metadata = {
   title: {
-    template: '%s – Z-Paste',
-    default: 'Z-Paste',
+    template: '%s – Stash',
+    default: 'Stash 2.0',
   },
-  description: 'Z-Paste documentation',
+  description: 'Stash 2.0 原生 macOS 剪贴板管理器文档',
 }
 
 const YEAR = new Date().getFullYear()
@@ -20,21 +20,21 @@ export default async function RootLayout({
   const pageMap = await getPageMap()
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="zh-CN" suppressHydrationWarning>
       <body>
         <Layout
           pageMap={pageMap}
-          docsRepositoryBase="https://github.com/perseveringman/z-paste"
+          docsRepositoryBase="https://github.com/buggyblues/Stash/tree/main/website"
           nextThemes={{
             defaultTheme: 'dark',
           }}
           navbar={
             <Navbar
-              logo={<b>Z-Paste</b>}
-              projectLink="https://github.com/perseveringman/z-paste"
+              logo={<b>Stash</b>}
+              projectLink="https://github.com/buggyblues/Stash"
             >
               <a
-                href="https://github.com/perseveringman/z-paste/releases/latest"
+                href="https://github.com/buggyblues/Stash/releases/latest"
                 target="_blank"
                 rel="noreferrer"
                 style={{ fontWeight: 500 }}
@@ -45,7 +45,7 @@ export default async function RootLayout({
           }
           footer={
             <Footer>
-              <span>Copyright © {YEAR} Z-Paste</span>
+              <span>Copyright © {YEAR} Stash</span>
             </Footer>
           }
         >

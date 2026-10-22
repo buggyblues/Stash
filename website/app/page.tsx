@@ -20,12 +20,12 @@ const features: FeatureItem[] = [
   {
     title: '快捷键召唤',
     emoji: '⚡',
-    description: '按 Shift+Cmd+V 即可唤起剪切板面板，不打断工作流，数字键 1-9 快速粘贴。',
+    description: '按 Shift+Cmd+V 即可唤起剪切板面板，不打断工作流，⌘1–⌘9 快速粘贴。',
   },
   {
     title: '代码高亮预览',
     emoji: '✨',
-    description: '使用 VS Code 引擎（Shiki）对代码片段语法高亮，JSON 自动格式化，颜色可视化预览。',
+    description: '原生代码高亮、JSON 格式化、图片和颜色预览，在同一面板中查看复制内容。',
   },
   {
     title: '本地隐私优先',
@@ -51,16 +51,16 @@ export default function Home() {
       <section className="py-24 px-8 text-center bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460]">
         <div className="max-w-2xl mx-auto">
           <h1 className="text-6xl font-extrabold mb-4 bg-gradient-to-r from-violet-400 to-blue-400 bg-clip-text text-transparent">
-            Z-Paste
+            Stash 2.0
           </h1>
           <p className="text-xl text-slate-300 mb-8 leading-relaxed">
-            macOS 剪切板管理器
+            Swift 原生 macOS 剪贴板管理器
             <br />
-            本地存储，隐私优先，免订阅
+            Liquid Glass · 键盘驱动 · 本地优先
           </p>
           <div className="flex gap-4 justify-center flex-wrap mb-6">
             <Link
-              href="https://github.com/perseveringman/z-paste/releases/latest"
+              href="https://github.com/buggyblues/Stash/releases/latest"
               className="px-6 py-3 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-semibold transition-colors no-underline"
             >
               免费下载
@@ -72,7 +72,7 @@ export default function Home() {
               查看文档
             </Link>
           </div>
-          <p className="text-sm text-slate-400">仅支持 macOS · Apple Silicon 和 Intel 均可</p>
+          <p className="text-sm text-slate-400">macOS 12+ · Apple Silicon / Intel · macOS 26+ 原生玻璃效果</p>
         </div>
       </section>
 

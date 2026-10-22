@@ -1,102 +1,112 @@
-name: Release
+name: Native Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    tags: ['v2.*']
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Verify packaging or publish the version in Info.plist
+        type: choice
+        options: [verify, publish]
+        default: verify
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  release:
-    runs-on: macos-14
-    timeout-minutes: 30
-
-    permissions:
-      contents: write
-
+  mini-tests:
+    if: github.repository == 'buggyblues/Stash' && (github.event_name == 'push' || github.ref == 'refs/heads/main')
+    runs-on: [self-hosted, macOS, ARM64, macmini, stash]
+    timeout-minutes: 20
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
         with:
-          node-version: '22'
-          cache: 'npm'
+          persist-credentials: false
+      - name: Native tests on Mac mini
+        run: |
+          sw_vers
+          swift --version
+          xcrun --sdk macosx --show-sdk-version
+          make test-headless
 
-      - name: Install the Apple certificate
+  package:
+    needs: mini-tests
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-26
+            arch: arm64
+          - runner: macos-26-intel
+            arch: x64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    env:
+      STASH_RELEASE_ARCH: ${{ matrix.arch }}
+      STASH_RELEASE_MODE: ${{ github.event_name == 'push' && 'publish' || inputs.mode }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Native tests
+        run: make test
+      - name: Import temporary signing credentials
+        if: env.STASH_RELEASE_MODE == 'publish'
         env:
           BUILD_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE }}
           P12_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          KEYCHAIN_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-        run: |
-          # create variables
-          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
-          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
-
-          # import certificate from secrets
-          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
-
-          # create temporary keychain
-          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-
-          # import certificate to keychain
-          security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security list-keychains -d user -s $KEYCHAIN_PATH
-
-          # verify
-          security find-identity -v -p codesigning $KEYCHAIN_PATH
-
-      - name: Prepare Apple API key for notarization
-        env:
           APPLE_API_KEY_CONTENT: ${{ secrets.APPLE_API_KEY_CONTENT }}
-        run: |
-          mkdir -p ~/private_keys
-          echo -n "$APPLE_API_KEY_CONTENT" | base64 --decode -o ~/private_keys/AuthKey_${{ secrets.APPLE_API_KEY_ID }}.p8
-
-      - name: Setup Python for node-gyp
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build, sign, notarize and publish
-        run: npx electron-vite build && npx electron-builder --mac --arm64 --x64 --publish always
+        run: bash swift/Scripts/ci-signing.sh
+      - name: Build native ZIP and DMG
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          APPLE_API_KEY: ~/private_keys/AuthKey_${{ secrets.APPLE_API_KEY_ID }}.p8
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
-          APPLE_TEAM_ID: "9L67H7PVDT"
+        run: make release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-${{ matrix.arch }}
+          path: swift/build/release/*
+          if-no-files-found: error
+      - name: Remove temporary signing credentials
+        if: always()
+        run: bash swift/Scripts/ci-cleanup-signing.sh
 
-      - name: Verify artifacts
+  publish:
+    needs: package
+    if: github.event_name == 'push' || inputs.mode == 'publish'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: native-*
+          merge-multiple: true
+          path: release-artifacts
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install COS publisher
+        run: python -m pip install cos-python-sdk-v5
+      - name: Publish and verify versioned CDN artifacts
+        env:
+          TENCENT_SECRET_ID: ${{ secrets.TENCENT_SECRET_ID }}
+          TENCENT_SECRET_KEY: ${{ secrets.TENCENT_SECRET_KEY }}
+          COS_BUCKET: ${{ secrets.COS_BUCKET }}
+          COS_REGION: ${{ secrets.COS_REGION }}
+        run: python swift/Scripts/publish-release.py release-artifacts
+      - name: Publish native GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          ls dist/*.dmg dist/*.zip dist/latest-mac.yml
-          test -f dist/latest-mac.yml
-
-      # - name: Upload to Tencent Cloud COS
-      #   env:
-      #     TENCENT_SECRET_ID: ${{ secrets.TENCENT_SECRET_ID }}
-      #     TENCENT_SECRET_KEY: ${{ secrets.TENCENT_SECRET_KEY }}
-      #     COS_BUCKET: ${{ secrets.COS_BUCKET }}
-      #     COS_REGION: ${{ secrets.COS_REGION }}
-      #   run: |
-      #     pip install coscmd
-      #     coscmd config -a "$TENCENT_SECRET_ID" -s "$TENCENT_SECRET_KEY" -b "$COS_BUCKET" -r "$COS_REGION"
-      #
-      #     VERSION=${GITHUB_REF#refs/tags/}
-      #     COS_PREFIX="Stash/releases/${VERSION}"
-      #
-      #     for file in dist/*.dmg dist/*.zip dist/*.blockmap dist/latest-mac.yml; do
-      #       [ -f "$file" ] && coscmd upload "$file" "${COS_PREFIX}/$(basename "$file")"
-      #     done
-      #
-      #     echo "✅ Uploaded artifacts to cos://${COS_BUCKET}/${COS_PREFIX}/"
-
-      - name: Clean up keychain
-        if: ${{ always() }}
-        run: security delete-keychain $RUNNER_TEMP/app-signing.keychain-db || true
+          version=$(/usr/bin/python3 -c "import plistlib; print(plistlib.load(open('swift/Scripts/Info.plist','rb'))['CFBundleShortVersionString'])")
+          gh release create "v$version" --verify-tag --title "Stash $version · Native Swift" --notes-file "docs/releases/$version.md" release-artifacts/*.zip release-artifacts/*.dmg release-artifacts/SHA256SUMS release-artifacts/manifest-*.json

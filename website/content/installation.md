@@ -2,57 +2,26 @@
 title: 安装指南
 ---
 
-# 安装指南
+# 安装 Stash 2.0
 
-## 系统要求
+Stash 2.0 使用 Swift、SwiftUI 与 AppKit，支持 macOS 12 或更高版本。macOS 26 及更新系统使用原生 Liquid Glass；较早系统使用系统材质。
 
-- macOS 12 Monterey 或更高版本
-- Apple Silicon（M1/M2/M3）或 Intel 处理器
+## 下载
 
-## 下载安装
+- [Apple Silicon 安装包](https://release.zyb.world/Stash/releases/v2.0.0/Stash-2.0.0-arm64.dmg)
+- [Intel 安装包](https://release.zyb.world/Stash/releases/v2.0.0/Stash-2.0.0-x64.dmg)
+- [GitHub Releases 与校验值](https://github.com/buggyblues/Stash/releases/latest)
 
-### 从 GitHub Releases 下载
+在苹果菜单的「关于本机」查看芯片类型，选择对应安装包。打开 DMG，将 Stash 拖入 Applications，然后启动 `/Applications/Stash.app`。
 
-1. 访问 [GitHub Releases](https://github.com/perseveringman/Stash/releases/latest) 页面
-2. 根据您的处理器架构下载对应版本：
-   - **Apple Silicon（M 系列芯片）**：下载 `z-paste-x.x.x-arm64.dmg`
-   - **Intel 处理器**：下载 `z-paste-x.x.x-x64.dmg`
-3. 打开下载的 `.dmg` 文件
-4. 将 **Z-Paste** 图标拖入 **Applications** 文件夹
+## 首次使用
 
-### 如何判断处理器类型
+Stash 常驻菜单栏，按 **⇧⌘V** 打开剪贴板面板。在「系统设置 → 隐私与安全性 → 辅助功能」允许 Stash，才能自动粘贴到其他应用。全局快捷键通过 macOS 的系统热键注册，不要求输入监控权限。
 
-点击左上角苹果菜单 → **关于本机**，查看「芯片」或「处理器」字段。
-
-## 首次启动
-
-1. 打开 **Launchpad** 或 **Applications** 文件夹，点击 **Z-Paste** 启动
-2. macOS 可能提示「无法验证开发者」，请按以下步骤处理：
-   - 打开 **系统设置** → **隐私与安全性**
-   - 在底部找到「Z-Paste 已被阻止」，点击 **仍然打开**
-3. 启动后会进入引导页面，按提示完成初始设置
-
-## 授予权限
-
-Z-Paste 需要以下权限才能正常工作：
-
-| 权限 | 用途 | 是否必须 |
-|---|---|---|
-| 辅助功能（Accessibility） | 自动粘贴到其他应用 | 必须 |
-| 输入监控（Input Monitoring） | 监听全局快捷键 | 必须 |
-
-首次触发相关功能时，macOS 会弹出权限申请弹窗，点击「打开系统设置」后在对应权限列表中勾选 **Z-Paste**。
-
-## 开机自启
-
-在 Z-Paste 的「设置」页面可以开启「登录时启动」，Z-Paste 会在菜单栏静默运行，不会弹出主窗口。
+在「设置 → 通用」可选择中央、侧边或底部布局，以及登录时启动。若快捷键与其他应用冲突，可在「设置 → 快捷键」更改。
 
 ## 卸载
 
-将 `/Applications/Z-Paste.app` 移入废纸篓即可。用户数据（剪切板历史）存储在：
+退出 Stash 后，将 `/Applications/Stash.app` 移入废纸篓。历史和设置保存在 `~/Library/Application Support/Stash/`。删除该目录会永久清除本机数据。
 
-```
-~/Library/Application Support/Z-Paste/
-```
-
-如需彻底清除数据，请同时删除该目录。
+Electron 1.x 已废弃；当前安装包、构建流程和更新均使用原生 Swift 版本。
