@@ -1,0 +1,60 @@
+name: Resume native release publication
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run:
+        description: Completed Native CI and Release run containing the signed packages
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-release-publication
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'buggyblues/Stash' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: python3 swift/Scripts/test-publish-release.py
+      - name: Verify original source, test gates and immutable tag
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN: ${{ inputs.source_run }}
+        run: python3 swift/Scripts/resume-release.py
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.source_run }}
+          pattern: native-*
+          merge-multiple: true
+          path: release-artifacts
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install cos-python-sdk-v5
+      - name: Upload unchanged packages and verify public bytes
+        env:
+          TENCENT_SECRET_ID: ${{ secrets.TENCENT_SECRET_ID }}
+          TENCENT_SECRET_KEY: ${{ secrets.TENCENT_SECRET_KEY }}
+          COS_BUCKET: ${{ secrets.COS_BUCKET }}
+          COS_REGION: ${{ secrets.COS_REGION }}
+        run: python -u swift/Scripts/publish-release.py release-artifacts
+      - name: Publish original native assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.source.outputs.version }}
+        run: |
+          gh release create "v$VERSION" --verify-tag --title "Stash $VERSION · Native Swift" --notes-file "docs/releases/$VERSION.md" release-artifacts/*.zip release-artifacts/*.dmg release-artifacts/SHA256SUMS release-artifacts/manifest-*.json

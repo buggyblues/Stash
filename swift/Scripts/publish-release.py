@@ -59,6 +59,26 @@ def verify_public(url, path):
             time.sleep(5 * (attempt + 1))
 
 
+def upload(client, bucket, key, path, content_type):
+    # Native packages are only a few MB. Avoid the SDK's default 1 MB multipart
+    # uploads, which failed repeatedly between GitHub runners and COS.
+    for attempt in range(3):
+        try:
+            client.upload_file(
+                Bucket=bucket, Key=key, LocalFilePath=str(path),
+                PartSize=16, MAXThread=1, EnableMD5=True,
+                ContentType=content_type,
+                CacheControl='public,max-age=31536000,immutable')
+            print(f'COS uploaded: {path.name}', flush=True)
+            return
+        except Exception as error:
+            # SDK exceptions can include request details; keep credentials out of logs.
+            print(f'Upload retry {attempt + 1}/3: {path.name} ({type(error).__name__})', flush=True)
+            if attempt == 2:
+                raise RuntimeError(f'COS upload failed: {path.name}') from None
+            time.sleep(5 * (attempt + 1))
+
+
 def main():
     from qcloud_cos import CosConfig, CosS3Client
     root = Path(sys.argv[1]).resolve()
@@ -73,8 +93,7 @@ def main():
         key = f'{prefix}/{path.name}'
         content_type = ('application/json' if path.suffix == '.json' else
                         'text/plain' if path.name == 'SHA256SUMS' else 'application/octet-stream')
-        client.upload_file(Bucket=bucket, Key=key, LocalFilePath=str(path),
-                           ContentType=content_type, CacheControl='public,max-age=31536000,immutable')
+        upload(client, bucket, key, path, content_type)
         verify_public(f'https://release.zyb.world/{key}', path)
 
 

@@ -41,4 +41,6 @@ https://release.zyb.world/Stash/releases/v2.0.0/Stash-2.0.0-x64.zip
 
 The native updater queries `buggyblues/Stash` GitHub Releases and selects the matching architecture's native ZIP. Electron's `latest-mac.yml` and blockmaps are not used in 2.x.
 
+If only publication fails after both signed packages and all test gates pass, run `Resume native release publication` on main with the original run ID. This uses the original artifacts without rebuilding or moving the version tag. It verifies the trusted source run, successful native/Mac mini/architecture gates, tag commit, version and unexpired artifacts, and refuses to overwrite an existing GitHub Release. The uploader uses 16 MB parts, one upload thread and bounded retries, then checks every public CDN hash before creating the release.
+
 After publication, verify the installed app's version and `StashImplementation=swift`, open it from Applications, and verify website copy, images and direct download URLs on the actual production site. A successful build alone is not release acceptance.

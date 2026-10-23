@@ -105,6 +105,9 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v2.') || inputs.mode == 'publish'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    concurrency:
+      group: native-release-publication
+      cancel-in-progress: false
     permissions:
       contents: write
     steps:
@@ -128,6 +131,8 @@ jobs:
           python-version: '3.12'
       - name: Install COS publisher
         run: python -m pip install cos-python-sdk-v5
+      - name: Test publisher and recovery guards
+        run: python swift/Scripts/test-publish-release.py
       - name: Publish and verify versioned CDN artifacts
         env:
           TENCENT_SECRET_ID: ${{ secrets.TENCENT_SECRET_ID }}
