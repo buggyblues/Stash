@@ -7,6 +7,7 @@ the existing HTTPS configuration for the fixed release domain.
 from datetime import datetime, timedelta, timezone
 import json
 import os
+import re
 
 DOMAIN = 'release.zyb.world'
 
@@ -27,6 +28,14 @@ def usable(cert):
     except (KeyError, TypeError, ValueError):
         return False
     return start <= datetime.now(timezone.utc) < end
+
+
+def release_urls(version):
+    if not re.fullmatch(r'2\.\d+\.\d+', version):
+        raise ValueError('Only a native 2.x version number may be refreshed')
+    names = [f'Stash-{version}-{arch}.{suffix}' for arch in ('arm64', 'x64') for suffix in ('zip', 'dmg')]
+    names += ['manifest-arm64.json', 'manifest-x64.json', 'SHA256SUMS']
+    return [f'https://{DOMAIN}/Stash/releases/v{version}/{name}' for name in names]
 
 
 def main():
@@ -57,20 +66,28 @@ def main():
         )}}))
 
     selected_id = os.environ.get('CERTIFICATE_ID', '')
-    if not selected_id:
-        return
-    selected = next((x for x in certificates if x.get('CertificateId') == selected_id), None)
-    if selected is None or not usable(selected):
-        raise SystemExit('Selected certificate is not currently valid, deployable and matched to release domain')
-    if cert_info.get('CertId') == selected_id:
-        print('Release domain already uses the selected certificate')
-        return
-    request = cdn_models.ModifyDomainConfigRequest()
-    request.from_json_string(json.dumps({
-        'Domain': DOMAIN, 'Route': 'Https.CertInfo.CertId', 'Value': json.dumps({'update': selected_id})
-    }))
-    result = cdn.ModifyDomainConfig(request)
-    print(json.dumps({'certificateActivationRequested': selected_id, 'requestId': result.RequestId}))
+    if selected_id:
+        selected = next((x for x in certificates if x.get('CertificateId') == selected_id), None)
+        if selected is None or not usable(selected):
+            raise SystemExit('Selected certificate is not currently valid, deployable and matched to release domain')
+        if cert_info.get('CertId') == selected_id:
+            print('Release domain already uses the selected certificate')
+        else:
+            request = cdn_models.ModifyDomainConfigRequest()
+            request.from_json_string(json.dumps({
+                'Domain': DOMAIN, 'Route': 'Https.CertInfo.CertId', 'Value': json.dumps({'update': selected_id})
+            }))
+            result = cdn.ModifyDomainConfig(request)
+            print(json.dumps({'certificateActivationRequested': selected_id, 'requestId': result.RequestId}))
+
+    version = os.environ.get('REFRESH_VERSION', '')
+    if version:
+        urls = release_urls(version)
+        request = cdn_models.PurgeUrlsCacheRequest()
+        request.from_json_string(json.dumps({'Urls': urls}))
+        result = cdn.PurgeUrlsCache(request)
+        print(json.dumps({'releaseCacheRefreshRequested': version, 'urls': urls,
+                          'taskId': result.TaskId, 'requestId': result.RequestId}))
 
 
 if __name__ == '__main__':

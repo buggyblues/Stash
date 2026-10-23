@@ -1,10 +1,14 @@
-name: Release CDN certificate
+name: Release CDN maintenance
 
 on:
   workflow_dispatch:
     inputs:
       certificate_id:
         description: Existing issued certificate to activate (empty inspects only)
+        type: string
+        default: ''
+      refresh_version:
+        description: Native 2.x version whose package URLs should be refreshed (empty skips)
         type: string
         default: ''
 
@@ -33,4 +37,5 @@ jobs:
           TENCENT_SECRET_ID: ${{ secrets.TENCENT_SECRET_ID }}
           TENCENT_SECRET_KEY: ${{ secrets.TENCENT_SECRET_KEY }}
           CERTIFICATE_ID: ${{ inputs.certificate_id }}
+          REFRESH_VERSION: ${{ inputs.refresh_version }}
         run: python swift/Scripts/inspect-release-cdn.py

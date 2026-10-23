@@ -35,6 +35,15 @@ class CertificateSelectionTests(unittest.TestCase):
             cert.update(changes)
             self.assertFalse(cdn.usable(cert), changes)
 
+    def test_refresh_is_restricted_to_known_native_package_urls(self):
+        urls = cdn.release_urls('2.0.0')
+        self.assertEqual(len(urls), 7)
+        self.assertTrue(all(url.startswith('https://release.zyb.world/Stash/releases/v2.0.0/') for url in urls))
+        self.assertIn('https://release.zyb.world/Stash/releases/v2.0.0/Stash-2.0.0-arm64.dmg', urls)
+        for invalid in ('1.6.7', '2.0.0/../', 'https://other.example/', ''):
+            with self.assertRaises(ValueError):
+                cdn.release_urls(invalid)
+
 
 if __name__ == '__main__':
     unittest.main()
