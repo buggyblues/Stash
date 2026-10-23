@@ -6,6 +6,7 @@ Swift is the only active app implementation. Electron source is archived under `
 
 - `Native CI and Release` runs complete native tests and an ad-hoc app build on GitHub's `macos-26` runner. Trusted main-branch changes also run headless tests on a dedicated Mac mini runner.
 - The Mac mini runner must be registered to this repository with labels `self-hosted`, `macOS`, `ARM64`, `macmini`, `stash`. It uses its own installation directory and must not reconfigure an existing runner for another repository.
+- Install the full Xcode application and complete its first launch, including the license and required components. Command Line Tools alone do not include XCTest. Select Xcode in this runner's environment with `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` and check `xcodebuild -checkFirstLaunchStatus`, `swift --version`, and `xcrun --sdk macosx --show-sdk-version` before restarting an idle runner.
 - Pull requests use GitHub-hosted runners. The persistent Mac mini never runs pull-request code.
 - The packaging stage follows the complete native tests and builds Apple Silicon on `macos-26` and Intel on `macos-26-intel`. The build requires Swift 6.2+ and macOS SDK 26+ so the Liquid Glass implementation is compiled into both packages.
 

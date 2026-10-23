@@ -203,7 +203,7 @@
   "onboarding.step6.sync.title": "iCloud 同步",
   "onboarding.step6.sync.desc": "可选通过 iCloud Drive 在多台 Mac 之间同步剪贴板数据。可随时在设置中更改。",
   "onboarding.step6.permission.title": "辅助功能权限",
-  "onboarding.step6.permission.desc": "授予「辅助功能」权限后，Stash 才能把内容粘贴回你正在使用的应用",
+  "onboarding.step6.permission.desc": "授予「辅助功能」权限后，Stash 才能把内容粘贴回你正在使用的应用。若开关已开仍无效，请移除旧 Stash 记录，再添加“应用程序”中的 Stash 并开启",
   "onboarding.step6.permission.granted": "已授权",
   "onboarding.step6.permission.button": "打开系统设置",
   "toast.accessibilityRequired": "请授予「辅助功能」权限后再粘贴到其他应用",

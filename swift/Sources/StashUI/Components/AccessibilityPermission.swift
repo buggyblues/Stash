@@ -6,15 +6,18 @@ import SwiftUI
 /// The state of the "Accessibility" permission Stash needs to paste content
 /// back into the application the user is working in.
 public enum AccessibilityPermission {
+    @MainActor private static let promptGate = AccessibilityPromptGate()
     /// Whether the app is trusted to control the computer.
     public static var isTrusted: Bool {
         AXIsProcessTrusted()
     }
 
     /// Asks macOS to show the permission prompt.
-    public static func prompt() {
-        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
-        _ = AXIsProcessTrustedWithOptions(options)
+    @MainActor public static func prompt() {
+        promptGate.requestIfNeeded(isTrusted: isTrusted) {
+            let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+            _ = AXIsProcessTrustedWithOptions(options)
+        }
     }
 
     /// Opens the accessibility pane of the system settings.
@@ -23,6 +26,19 @@ public enum AccessibilityPermission {
         if let url {
             NSWorkspace.shared.open(url)
         }
+    }
+}
+
+/// A denied or stale grant must not open the system dialog on every paste.
+/// The current trust state is still checked for every paste; this only limits
+/// the system prompt to one request during the running app session.
+@MainActor final class AccessibilityPromptGate {
+    private var hasPrompted = false
+
+    func requestIfNeeded(isTrusted: Bool, request: () -> Void) {
+        guard !isTrusted, !hasPrompted else { return }
+        hasPrompted = true
+        request()
     }
 }
 

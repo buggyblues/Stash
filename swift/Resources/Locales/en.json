@@ -203,7 +203,7 @@
   "onboarding.step6.sync.title": "iCloud Sync",
   "onboarding.step6.sync.desc": "Optionally sync clipboard across multiple Macs via iCloud Drive. You can change this anytime in Settings.",
   "onboarding.step6.permission.title": "Accessibility Permission",
-  "onboarding.step6.permission.desc": "Grant the Accessibility permission so Stash can paste content back into the app you are working in",
+  "onboarding.step6.permission.desc": "Grant Accessibility permission so Stash can paste into your current app. If the switch is on but access still fails, remove the old Stash entry, then add Stash from Applications and enable it again",
   "onboarding.step6.permission.granted": "Granted",
   "onboarding.step6.permission.button": "Open System Settings",
   "toast.accessibilityRequired": "Grant the Accessibility permission to paste into other apps",
