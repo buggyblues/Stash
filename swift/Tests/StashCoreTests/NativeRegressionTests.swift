@@ -6,6 +6,16 @@ import XCTest
 @testable import StashApp
 
 final class NativeRegressionTests: XCTestCase {
+    @MainActor func testNativeMenuProvidesCommandWToCloseCurrentWindow() async {
+        let menu = MainMenuBuilder.build(language: .simplifiedChinese)
+        let command = menu.items.compactMap(\.submenu).flatMap(\.items)
+            .first { $0.action == #selector(NSWindow.performClose(_:)) }
+        XCTAssertNotNil(command)
+        XCTAssertEqual(command?.keyEquivalent, "w")
+        XCTAssertEqual(command?.keyEquivalentModifierMask, .command)
+        XCTAssertNil(command?.target)
+    }
+
     func repository() throws -> Repository {
         let db = try SQLiteConnection(path: ":memory:")
         try Schema.createTables(in: db)

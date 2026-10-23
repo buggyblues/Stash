@@ -2,6 +2,8 @@
   "common.confirm": "Confirm",
   "common.cancel": "Cancel",
   "common.close": "Close",
+  "menu.file": "File",
+  "menu.closeWindow": "Close Window",
   "common.clear": "Clear",
   "common.save": "Save",
   "common.delete": "Delete",

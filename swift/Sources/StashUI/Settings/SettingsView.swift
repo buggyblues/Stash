@@ -93,6 +93,17 @@ public struct SettingsView: View {
 
     public var body: some View {
         navigation
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button(action: onClose) {
+                        Label(L10n.t("common.close"), systemImage: "xmark")
+                    }
+                    .labelStyle(.iconOnly)
+                    .help(L10n.t("common.close") + " (⌘W)")
+                    .accessibilityLabel(L10n.t("common.close"))
+                    .keyboardShortcut("w", modifiers: .command)
+                }
+            }
             .environment(\.colorScheme, theme.isDark ? .dark : .light)
             .tint(theme.accentColor)
             .overlay(alignment: .bottom) { toastOverlay }

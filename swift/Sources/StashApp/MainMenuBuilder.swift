@@ -22,6 +22,14 @@ public enum MainMenuBuilder {
         appMenuItem.submenu = appMenu
         menu.addItem(appMenuItem)
 
+        // Standard responder-chain close command for the current window.
+        let fileMenuItem = NSMenuItem()
+        let fileMenu = NSMenu(title: Localization.translate("menu.file", language: language))
+        fileMenu.addItem(withTitle: Localization.translate("menu.closeWindow", language: language),
+                         action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        fileMenuItem.submenu = fileMenu
+        menu.addItem(fileMenuItem)
+
         // Edit menu. An empty title makes AppKit use the localised system
         // title for the standard editing commands.
         let editMenuItem = NSMenuItem()

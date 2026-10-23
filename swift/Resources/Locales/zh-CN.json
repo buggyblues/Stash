@@ -2,6 +2,8 @@
   "common.confirm": "确认",
   "common.cancel": "取消",
   "common.close": "关闭",
+  "menu.file": "文件",
+  "menu.closeWindow": "关闭窗口",
   "common.clear": "清空",
   "common.save": "保存",
   "common.delete": "删除",
