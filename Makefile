@@ -5,8 +5,9 @@ test:
 	cd swift && swift test
 test-headless:
 	cd swift && swift test --skip NativeRegressionTests
-run: build
-	open swift/build/Stash.app
+run:
+	bash swift/Scripts/build-app.sh --qa
+	open swift/build/Stash-QA.app
 locales:
 	python3 swift/Scripts/generate-locales.py
 release:

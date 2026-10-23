@@ -1,10 +1,19 @@
-name: Inspect release CDN certificate
+name: Release CDN certificate
 
 on:
   workflow_dispatch:
+    inputs:
+      certificate_id:
+        description: Existing issued certificate to activate (empty inspects only)
+        type: string
+        default: ''
 
 permissions:
   contents: read
+
+concurrency:
+  group: release-cdn-certificate
+  cancel-in-progress: false
 
 jobs:
   inspect:
@@ -17,9 +26,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: python -m pip install tencentcloud-sdk-python
-      - name: Read release domain certificate metadata
+      - run: python swift/Scripts/test-release-cdn.py
+      - run: python -m pip install tencentcloud-sdk-python==3.1.193
+      - name: Inspect or activate an existing matching certificate
         env:
           TENCENT_SECRET_ID: ${{ secrets.TENCENT_SECRET_ID }}
           TENCENT_SECRET_KEY: ${{ secrets.TENCENT_SECRET_KEY }}
+          CERTIFICATE_ID: ${{ inputs.certificate_id }}
         run: python swift/Scripts/inspect-release-cdn.py

@@ -40,7 +40,7 @@ make build
 make run
 ```
 
-构建产物为 `swift/build/Stash.app`。开发构建可沿用本机签名证书；公开发布使用 Developer ID 签名和 Apple 公证。
+`make build` 产物为 `swift/build/Stash.app`。`make run` 启动使用独立应用标识和数据目录的 `Stash-QA.app`，避免开发签名覆盖正式版的辅助功能授权。公开发布使用 Developer ID 签名和 Apple 公证。
 
 三语文案以 `swift/Resources/Locales/*.json` 为唯一来源，执行 `make locales` 更新 Swift 生成表。
 
