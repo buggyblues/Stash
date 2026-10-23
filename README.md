@@ -6,8 +6,8 @@
 
 ## 下载
 
-- [Apple Silicon 安装包](https://release.zyb.world/Stash/releases/v2.0.0/Stash-2.0.0-arm64.dmg)
-- [Intel 安装包](https://release.zyb.world/Stash/releases/v2.0.0/Stash-2.0.0-x64.dmg)
+- [Apple Silicon 安装包](https://release.zyb.world/Stash/releases/v2.0.1/Stash-2.0.1-arm64.dmg)
+- [Intel 安装包](https://release.zyb.world/Stash/releases/v2.0.1/Stash-2.0.1-x64.dmg)
 - [GitHub Releases](https://github.com/buggyblues/Stash/releases/latest)
 
 macOS 12 及以上；macOS 26 及以上使用系统 Liquid Glass，旧系统使用原生 Vibrancy 材质。
@@ -28,7 +28,7 @@ macOS 12 及以上；macOS 26 及以上使用系统 Liquid Glass，旧系统使�
 
 ![Stash 2.0 原生中央布局与 JSON 预览](docs/screenshots/2.0.0/central-light.png)
 
-[查看其他布局与设置截图](docs/screenshots/2.0.0/README.md)。截图使用隔离的合成演示数据。
+[查看其他布局截图](docs/screenshots/2.0.0/README.md) 与 [2.0.1 设置页](docs/screenshots/2.0.1/settings-dark.png)。设置页可通过右上角关闭按钮或 ⌘W 关闭。截图使用隔离的合成演示数据。
 
 ## 开发
 
@@ -48,7 +48,7 @@ make run
 
 GitHub Actions 调度两类执行器：Mac mini 运行无桌面依赖的测试，GitHub macOS 26 执行器运行完整测试并生成 Apple Silicon / Intel 原生安装包。`v2.*` 标签触发签名、公证、GitHub Release 和 COS/CDN 发布。
 
-详见 [发布流程](docs/releasing.md) 和 [2.0.0 变更](docs/releases/2.0.0.md)。网站介绍和截图同样只对应 Swift 新版。
+详见 [发布流程](docs/releasing.md)、[2.0.0 变更](docs/releases/2.0.0.md) 和 [2.0.1 修复](docs/releases/2.0.1.md)。网站介绍和截图同样只对应 Swift 新版。
 
 ## 许可证
 
